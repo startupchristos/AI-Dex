@@ -3,6 +3,9 @@
 ## Purpose
 Dex uses repository-enforced quality gates so unsafe changes cannot merge.
 
+## Current Rollout
+- Active stack runbook: `docs/testing-hardening-merge-runbook.md`
+
 ## Repository Is Source Of Truth
 - Decisions belong in `System/PRDs/` or `docs/`.
 - Delivery work must link issue -> PR -> docs.
@@ -15,6 +18,8 @@ Dex uses repository-enforced quality gates so unsafe changes cannot merge.
 - Documentation drift gate passes or approved exception label exists.
 - Lint, test suites, and coverage thresholds pass.
 - Hook harness tests pass.
+- Security gate passes (secret leakage detection).
+- Large-vault performance budget passes.
 
 Current coverage thresholds (ratchet baseline):
 - Total coverage >= 15%
@@ -36,3 +41,7 @@ Every exception must include rationale in PR body and reviewer approval.
 
 ## Regression Rule
 - Bug-fix PRs must include a regression test or explicit reviewer-approved exception.
+
+## Migration Safety
+- Breaking-change migrations must support dry-run + apply + rollback.
+- Migration tests must cover successful apply and rollback restoration.

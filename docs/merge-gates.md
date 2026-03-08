@@ -11,8 +11,10 @@ Configure GitHub branch protection on `main` to require:
 - docs drift gate
 - hook harness tests
 - linting
-- `core/tests` + `core/mcp/tests`
+- `core/tests` + `core/mcp/tests` + `core/migrations/tests`
 - coverage thresholds
+- security gate
+- large-vault performance budget
 - distribution/path safety checks
 
 ## Branch Protection Settings
@@ -24,3 +26,7 @@ Configure GitHub branch protection on `main` to require:
 
 ## Optional API Setup
 Use `scripts/configure-branch-protection.sh` with a GitHub token that can administer repository settings.
+
+## Active Stack Execution
+For the current staged rollout and closeout sequence, use:
+- `docs/testing-hardening-merge-runbook.md`
