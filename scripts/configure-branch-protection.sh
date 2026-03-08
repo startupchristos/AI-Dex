@@ -23,12 +23,27 @@ gh api \
   --method PUT \
   -H "Accept: application/vnd.github+json" \
   "repos/$OWNER/$REPO/branches/$BRANCH/protection" \
-  -F required_status_checks.strict=true \
-  -F required_status_checks.contexts[]="Dex CI / quality" \
-  -F enforce_admins=true \
-  -F required_pull_request_reviews.dismiss_stale_reviews=true \
-  -F required_pull_request_reviews.required_approving_review_count=1 \
-  -F required_conversation_resolution=true \
-  -F restrictions=
+  --input - <<'JSON'
+{
+  "required_status_checks": {
+    "strict": true,
+    "contexts": ["Dex CI / quality"]
+  },
+  "enforce_admins": true,
+  "required_pull_request_reviews": {
+    "dismiss_stale_reviews": true,
+    "require_code_owner_reviews": true,
+    "required_approving_review_count": 1
+  },
+  "restrictions": null,
+  "required_linear_history": false,
+  "allow_force_pushes": false,
+  "allow_deletions": false,
+  "block_creations": false,
+  "required_conversation_resolution": true,
+  "lock_branch": false,
+  "allow_fork_syncing": false
+}
+JSON
 
 echo "Branch protection configured."
