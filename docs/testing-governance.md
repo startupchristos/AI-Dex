@@ -3,6 +3,9 @@
 ## Purpose
 Dex uses repository-enforced quality gates so unsafe changes cannot merge.
 
+## Current Rollout
+- Active stack runbook: `docs/testing-hardening-merge-runbook.md`
+
 ## Repository Is Source Of Truth
 - Decisions belong in `System/PRDs/` or `docs/`.
 - Delivery work must link issue -> PR -> docs.
