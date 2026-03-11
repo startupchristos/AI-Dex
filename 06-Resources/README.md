@@ -4,6 +4,7 @@ Reference material you consult but aren't actively working on.
 
 ## Subfolders
 
+- **Identity/** — Beliefs, challenges, and wisdom for context-aware AI advice
 - **Learnings/** — Compound knowledge organized by topic
 - **Dex_System/** — Documentation about how Dex works
 - **Quarterly_Reviews/** — Quarterly reflection and strategic reviews

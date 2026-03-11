@@ -1,28 +1,201 @@
 # Strategic Pillars Configuration
 # 
-# Pillars are your main focus areas — think of them as how you carve up your role thematically.
-# These are NOT time-bound (like quarterly goals). They represent ongoing areas of responsibility
-# that typically stay consistent for 6-12+ months, or until your role significantly changes.
+# Pillars are your main focus areas — think of them as how you carve up your life thematically.
+# These are NOT time-bound (like quarterly goals). They represent ongoing domains of
+# responsibility that typically stay consistent for 6-12+ months.
 #
-# PILLAR (ongoing):           GOAL (time-bound):
-# "Revenue Growth"      vs    "Hit 150% quota in Q1"
-# "Product Strategy"    vs    "Launch mobile app"
-# "Customer Retention"  vs    "Reduce churn to <2%"
+# PILLAR (ongoing):             GOAL (time-bound):
+# "Engagements"          vs    "Deliver Cognome ExplainerAI roadmap Q1"
+# "Professional"         vs    "Publish 8 LinkedIn posts by March"
+# "Body, Mind & Spirit"  vs    "Run 10K by April"
 #
 # Want to change your pillars? Just chat with Claude: "I need to reconfigure my strategic pillars"
 # — it'll help you update how your work ladders up to new focus areas.
 #
-# The Work MCP uses these to categorize tasks and check balance across your work.
+# The Work MCP uses these to categorize tasks and check balance across your life.
 
-pillars: []
-  # Will be populated during onboarding
-  # Example structure:
-  # - id: pillar_id
-  #   name: "Pillar Name"
-  #   description: "What this pillar represents"
-  #   keywords:
-  #     - keyword1
-  #     - keyword2
+pillars:
+  - id: activities_social
+    name: "Activities & Social"
+    description: "Hobbies, leisure pursuits, and social life — travel, sailing, salsa dancing, social events, and anything done for enjoyment, adventure, or connection."
+    keywords:
+      - travel
+      - sailing
+      - salsa
+      - dance
+      - social
+      - event
+      - trip
+      - holiday
+      - hobby
+      - sport
+      - activity
+      - restaurant
+      - party
+      - class
+      - workshop
+      - friend
+      - booking
+      - flight
+      - hotel
+      - itinerary
+
+  - id: body_mind_spirit
+    name: "Body Mind Spirit"
+    description: "Personal wellbeing and development — exercise, nutrition, meditation, coaching, therapy, and anything that supports physical health, mental clarity, and personal growth."
+    keywords:
+      - exercise
+      - workout
+      - training
+      - nutrition
+      - meal
+      - diet
+      - meditation
+      - mindfulness
+      - coaching
+      - coach
+      - therapy
+      - health
+      - fitness
+      - sleep
+      - recovery
+      - routine
+      - habit
+      - wellbeing
+      - personal development
+      - reading
+      - course
+      - learning
+
+  - id: life_ops
+    name: "Life Ops"
+    description: "Life administration — finances, bills, insurance, bureaucracy, subscriptions, and anything that keeps life running smoothly in the background."
+    keywords:
+      - finance
+      - tax
+      - bill
+      - insurance
+      - admin
+      - bureaucracy
+      - subscription
+      - bank
+      - document
+      - legal
+      - renew
+      - passport
+      - appointment
+      - paperwork
+      - accountant
+      - invoice
+      - payment
+      - budget
+      - savings
+      - investment
+
+  - id: ppm_career
+    name: "PPM Career"
+    description: "Startup operator career — LLC ops, job search, professional development, Cognome, digital products, programs, thought leadership, speaking."
+    keywords:
+      - client
+      - cognome
+      - consulting
+      - engagement
+      - deliverable
+      - proposal
+      - stakeholder
+      - roadmap
+      - sprint
+      - product
+      - meeting prep
+      - client work
+      - collaboration
+      - programme
+      - contract
+      - scope
+      - discovery
+      - retainer
+      - project delivery
+      - linkedin
+      - content
+      - post
+      - article
+      - speaking
+      - podcast
+      - webinar
+      - conference
+      - talk
+      - brand
+      - networking
+      - positioning
+      - career
+      - resume
+      - job
+      - interview
+      - writing
+      - publish
+      - audience
+      - newsletter
+      - thought leadership
+      - referral
+      - outreach
+      - digital product
+      - course
+      - lead magnet
+      - mentor
+      - mentoring
+      - oneday
+      - founder
+      - teaching
+      - class
+      - template
+      - freebie
+      - product launch
+      - sales page
+      - opt-in
+      - llc
+      - invoice
+
+  - id: side_ventures
+    name: "Side Ventures"
+    description: "Other ventures outside main career — Directory Website, Music publishing, and similar side projects."
+    keywords:
+      - directory
+      - website
+      - music
+      - publishing
+      - side venture
+      - side project
+      - venture
+
+  - id: wealth
+    name: "Wealth"
+    description: "Building and managing wealth — investments, real estate, passive income streams, and long-term financial growth."
+    keywords:
+      - investing
+      - investment
+      - portfolio
+      - stocks
+      - etf
+      - funds
+      - dividends
+      - real estate
+      - property
+      - rental
+      - mortgage
+      - cashflow
+      - passive income
+      - yield
+      - returns
+      - assets
+      - net worth
+      - syndication
+      - deal
+      - llc
+      - wealth
+      - capital
+      - appreciation
+      - exit
+      - reit
 
 # Priority limits (how many active tasks per priority level)
 priority_limits:

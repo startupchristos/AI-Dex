@@ -119,7 +119,8 @@ Tracks whether user has been asked about anonymous feature usage tracking.
 - **Consent asked:** false
 - **Consent decision:** pending
 - **Consent date:** (not yet decided)
-- **Last prompted:** (not yet prompted)
+- **Last prompted:** 2026-02-21
+- **Re-ask after:** 2026-03-21
 
 **Values:**
 - `Consent decision: pending` → Not yet decided (will be asked each session until they choose)

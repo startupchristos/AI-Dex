@@ -7,6 +7,99 @@ All notable changes to Dex will be documented in this file.
 
 ---
 
+## [1.10.10] - 2026-03-11
+
+### career-coach-custom — Protected from Updates
+
+**Before:** Custom career-coach skill (5 modes including Depth/Identity) was in core folder, at risk of overwrite during Dex updates.
+
+**Now:** Migrated to `career-coach-custom/`, protected from `/dex-update`. Invoke with `/career-coach-custom`. Core `career-coach` can receive upstream updates; custom version stays intact.
+
+---
+
+## [1.10.9] - 2026-03-09
+
+### Identity Files and Thinking Skills (PAI-Inspired)
+
+**Before:** No structured place for beliefs, challenges, or wisdom. No formal thinking skills for complex decisions.
+
+**Now:**
+- **Identity folder** — `06-Resources/Identity/` with `Beliefs.md`, `Challenges.md`, `Wisdom.md`. Populate over time for context-aware advice.
+- **Thinking skills** — `/first-principles-custom` (decompose assumptions, rebuild from fundamentals), `/red-team-custom` (stress-test ideas, find fatal flaws), `/council-custom` (multi-perspective debate).
+- **Deep-solve** — `/deep-solve-custom` for structured 7-phase problem-solving (Observe, Think, Plan, Build, Execute, Verify, Learn) on complex, multi-step work.
+
+Skills optionally load Identity files when relevant. CLAUDE.md includes Identity context behavior and updated skills list.
+
+---
+
+## [1.10.8] - 2026-03-07
+
+### Notion Integration (Documents)
+
+**Before:** No way to sync Notion pages to local Markdown or push edits back from Dex.
+
+**Now:** Full Notion integration for document workflows. Hosted MCP (OAuth) at `https://mcp.notion.com/mcp`. Load util-notion before any Notion MCP use. Commands: `util-notion-get-page` (checkout page to `06-Resources/Notion/`), `util-notion-push-page` (push local edits back). Config: `System/notion-config.md`. Agent, skill, format rules, and frontmatter spec added. Documents only; no Cognome or pd-* integration.
+
+---
+
+## [1.10.7] - 2026-03-06
+
+### Cursor Rule — Client Context Switching
+
+New rule `.cursor/rules/client-context-switching.mdc` ensures Cursor loads the right context when you say "let's work on [client]", "switch to [client]", or similar. Loads consultant persona, client README, and optionally project README before responding. Aligns Cursor with CLAUDE.md behavior.
+
+---
+
+## [1.10.6] - 2026-03-06
+
+### util-clean-markdown — Pandoc Underline Spans
+
+`util-clean-markdown` now converts Pandoc underline spans to HTML so they actually render. Before: `[Termination]{.underline}` was ignored by most markdown viewers. After: converted to `<u>Termination</u>`, which renders underlined in Obsidian, VS Code, GitHub, and similar.
+
+---
+
+## [1.10.5] - 2026-03-03
+
+### File Naming — Date Prefix Without Dashes
+
+Date prefixes in filenames now use `YYYYMMDD` (no dashes) instead of `YYYY-MM-DD`. Example: `20260227 - Cognome - Explainer-AI-Kickoff.md` not `2026-02-27 - Cognome - Explainer-AI-Kickoff.md`. Applies to meeting notes, structured docs, career evidence, job search results, and similar dated files. Content dates (metadata, due dates) remain `YYYY-MM-DD` (ISO). Updated file-naming rule, CLAUDE.md, AI-workspace meetings convention, structure-notes skill, and career-coach templates.
+
+---
+
+## [1.10.4] - 2026-03-03
+
+### Oneday Class Recap Generator — HTML Font Styling
+
+HTML recap output uses 11pt Trebuchet MS. Font style must be on each `<p>` tag (not a wrapper div). Gmail does not cascade parent styles to children when pasting HTML; inline styles on each element are required for font preservation.
+
+---
+
+## [1.10.3] - 2026-03-03
+
+### Oneday Class Recap Generator
+
+New custom skill `/oneday-class-recap-generator-custom` generates post-class recap emails for Oneday participants. Input: transcript URL (or pasted transcript) and recording URL. Extracts educational content (upskilling, general startup advice, feedback) and excludes proprietary founder-specific progress. Output follows sample recap format (.md and optional .html for Gmail paste).
+
+---
+
+## [1.10.2] - 2026-03-03
+
+### Programs-and-Collaborations / Oneday
+
+Added `05-Areas/PPM-Career/Programs-and-Collaborations/` with Oneday subfolder for mentoring founders and teaching classes. Updated CLAUDE.md, PPM Career README, and pillars.yaml so tasks about Oneday, mentoring, or teaching route to PPM Career.
+
+---
+
+## [1.10.1] - 2026-02-27
+
+### Email Writing Guidelines
+
+**Before:** No standard rules for drafting emails to team, partners, or business contacts. Each draft was ad hoc.
+
+**Now:** Email drafting guidelines live in `06-Resources/Reference - Email-Writing-Guidelines.md`. When you ask Dex for an email draft, it loads and applies structure, tone, formatting, and validation rules automatically. A Cursor rule (`.cursor/rules/email-writing.mdc`) is available for manual inclusion when drafting in the editor.
+
+---
+
 ## [1.10.0] - 2026-02-17
 
 ### 🩺 Dex Now Tells You When Something's Wrong

@@ -1,0 +1,59 @@
+﻿# Cursor AI exclusions for AI-Dex
+# Controls what Cursor's AI indexes and references via @
+# This file takes effect alongside .vscode/settings.json (search.useIgnoreFiles: false)
+# which disables .gitignore filtering so personal vault folders ARE visible.
+
+# --- Secrets & Credentials (never expose to AI) ---
+.env
+.env.local
+*.key
+*.pem
+.secrets
+.secrets.reference
+*token.json
+*credentials.json
+gmail-token.json
+gmail-credentials.json
+
+# --- Build & Dependency Artifacts (large, noisy, no value) ---
+node_modules/
+venv/
+.venv/
+env/
+ENV/
+__pycache__/
+*.py[cod]
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+wheels/
+
+# --- Editor & OS Noise ---
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*.log
+*.backup
+*.bak
+*~
+
+# --- Test / Debug Scripts (development artifacts) ---
+.scripts/test-*.py
+.scripts/private/
+scripts/private/
+
+# --- Used to be: Demo Data (avoid contaminating real context) ---
+# --- System Data (avoid contaminating real context) ---
+System/
+
+# --- Obsidian Internal ---
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+
+# --- Python Test Cache ---
+.pytest_cache/
+.coverage
+htmlcov/

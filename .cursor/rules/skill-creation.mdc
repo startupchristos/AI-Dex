@@ -1,0 +1,28 @@
+---
+description: When creating or significantly modifying skills, always follow create-skill-custom guidelines
+alwaysApply: true
+---
+
+# Skill Creation Guidelines
+
+**When creating a new skill or significantly modifying an existing skill**, you MUST follow the guidelines in `.claude/skills/create-skill-custom/SKILL.md` — even if the user does not explicitly ask you to.
+
+## Required Steps
+
+1. **Before writing anything**, read `.claude/skills/create-skill-custom/references/design-principles.md` to apply Anthropic's skill design standards.
+
+2. **Follow the create-skill-custom process:**
+   - Understand the skill (use case, triggers, structure type)
+   - Plan reusable resources (scripts/, references/, assets/)
+   - Create the skill using the template and quality rules
+   - Optionally run `quick_validate.py` to catch structural issues
+
+3. **Quality rules (from design-principles):**
+   - `description` must include "when to use" scenarios, not just what it does
+   - Keep SKILL.md under 500 lines; move detailed content to `references/`
+   - No README.md, CHANGELOG.md, or auxiliary files in the skill folder
+   - Every line must justify its token cost
+
+4. **Load reference files as needed:** `output-patterns.md`, `workflows.md` when relevant.
+
+**This applies whether the user says "create a skill for X," "build a skill that...," or asks you to modify/refactor an existing skill.**

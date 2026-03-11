@@ -1,0 +1,35 @@
+---
+description: How this Cursor workspace is structured and which files are the source of truth for rules
+alwaysApply: true
+---
+
+# Environment Setup
+
+This Cursor workspace has two folder trees loaded simultaneously:
+- `AI-Dex` — personal knowledge vault (Dex)
+- `Cognome AI-workspace` — Cognome product and client work
+
+## AI Environments in Use
+
+Two AI environments operate in this workspace:
+- Claude Code (Cursor plugin)
+- Cursor agentic chat (offers a selection of agents: Composer, Claude, ChatGPT, etc.)
+
+Both should follow the same rules and guidelines.
+
+## Single Source of Truth
+
+**CLAUDE.md files are the source of truth for all rules and guidelines.**
+
+- `C:\Users\chris\OneDrive\AI-Dex\CLAUDE.md` — Dex vault rules
+- `C:\Users\chris\OneDrive\Documents\PPM Career\Clients & Startups\Cognome\AI-workspace\CLAUDE.md` — Cognome workspace rules
+
+The `.cursor/rules/*.mdc` files are thin delegates that point to the relevant CLAUDE.md section. They do NOT contain the actual rules.
+
+## Rule: When Editing Rules or Guidelines
+
+1. Edit the relevant CLAUDE.md file first — that is the only place rules live
+2. Do NOT edit `.cursor/rules/*.mdc` files to add or change rule content
+3. Only touch `.mdc` files if you need Cursor-specific behavior that does not belong in CLAUDE.md (rare)
+
+This ensures all three AI environments stay in sync automatically.

@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(./System/**)"
+    ],
+    "allow": [
+      "Bash(python3:*)",
+      "Bash(C:/Users/chris/AppData/Local/Programs/Python/Python313/python.exe:*)",
+      "Bash(ls:*)"
+    ]
+  }
+}

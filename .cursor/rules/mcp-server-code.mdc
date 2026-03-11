@@ -1,0 +1,22 @@
+---
+description: When writing MCP server implementation code, always follow anthropic-mcp-builder guidelines
+alwaysApply: true
+---
+
+# MCP Server Code Guidelines
+
+**When writing MCP server implementation code** (Python FastMCP or Node/TypeScript MCP SDK), you MUST follow the guidelines in `.claude/skills/anthropic-mcp-builder/SKILL.md` — even if the user does not explicitly invoke the skill.
+
+## Key Requirements
+
+1. **Before writing code**, read the anthropic-mcp-builder skill and its references (mcp_best_practices.md, language-specific guides).
+
+2. **Apply these patterns:**
+   - **Tool naming:** Clear, descriptive, action-oriented (e.g., `github_create_issue`, `github_list_repos`)
+   - **Error messages:** Actionable — guide agents toward solutions with specific suggestions
+   - **Context management:** Concise descriptions, filter/paginate support, focused return data
+   - **Input schema:** Use Zod (TypeScript) or Pydantic (Python) with constraints and descriptions
+
+3. **Follow framework patterns** from the language-specific guides (TypeScript SDK, Python SDK).
+
+**This applies when the user asks to "build an MCP server," "write MCP server code for X," "implement an MCP for [API]," or similar.**

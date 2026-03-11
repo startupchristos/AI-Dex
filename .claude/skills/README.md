@@ -25,7 +25,7 @@ Skills transform Claude from general-purpose assistant into specialized agent:
 - Consistent, reliable, no explanation needed
 
 **Real examples:**
-- `/career-coach` - Personal career coaching with 4 specialized modes (weekly reports, monthly reflections, self-reviews, promotion assessments)
+- `/career-coach-custom` - Personal career coaching with 5 modes (weekly reports, monthly reflections, self-reviews, promotion assessments, depth/identity coaching)
 - `/anthropic-xlsx` - Create, edit, analyze spreadsheets with formulas and formatting
 - `/product-brief` - Extract product ideas through guided questions and generate full PRD
 - `/triage` - Process inbox intelligently, extract tasks, update person pages
@@ -200,10 +200,20 @@ Built specifically for personal knowledge management and productivity workflows 
 - `/meeting-prep` - Prepare for meetings
 - `/process-meetings` - Process Granola meetings
 
+**Thinking & Decision Support:**
+- `/first-principles-custom` - Decompose to axioms, challenge assumptions, reconstruct from fundamentals
+- `/red-team-custom` - Stress-test ideas, find fatal flaws, adversarial validation
+- `/council-custom` - Multi-perspective debate for weighing options
+- `/deep-solve-custom` - Structured 7-phase problem-solving (Observe, Think, Plan, Build, Execute, Verify, Learn)
+
 **Career Development:**
 - `/career-setup` - Initialize career system
 - `/career-coach` - Career reflections and assessments
+- `/job-search-custom` - Search for jobs matching criteria across configured sources (LinkedIn, Indeed, Wellfound, etc.)
+- `/job-opportunity` - Evaluate fit, customize applications, and prepare for each interview stage
 - `/resume-builder` - Build resume through guided interview
+- `/linkedin-post-generator-custom` - Create LinkedIn posts in venture operator voice (triggered judgment, mandatory stop line)
+- `/oneday-class-recap-generator-custom` - Generate Oneday class recap emails from transcript URL
 
 **Projects:**
 - `/project-health` - Review project status

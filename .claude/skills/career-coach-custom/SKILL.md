@@ -1,5 +1,5 @@
 ---
-name: career-coach
+name: career-coach-custom
 description: Personal career coach with 5 modes (weekly reports, monthly reflections, self-reviews, promotion assessments, depth/identity coaching). Use when: preparing for reviews, assessing promotion readiness, processing work reflections, working through career dilemmas or identity tensions, or generating evidence for career discussions.
 ---
 
@@ -24,12 +24,12 @@ This command uses **Career MCP tools** for efficient data aggregation:
 ## Usage
 
 ```
-/career-coach [optional initial brain dump]
+/career-coach-custom [optional initial brain dump]
 ```
 
 **Examples:**
-- `/career-coach` — Start fresh session
-- `/career-coach Had a tough week leading the API migration project...` — Start with context
+- `/career-coach-custom` — Start fresh session
+- `/career-coach-custom Had a tough week leading the API migration project...` — Start with context
 
 ---
 
@@ -239,13 +239,13 @@ After completing any mode:
 
 - **Daily Reviews:** During `/review`, if user mentions career-relevant achievements, offer to capture for evidence
 - **Granola Meetings:** When processing manager meetings, extract feedback, note development discussions, flag career action items, append to `05-Areas/Career/Review_History.md`
-- **Quarterly Reviews:** During `/quarter-review`, prompt to run `/career-coach` for promotion assessment or monthly reflection
+- **Quarterly Reviews:** During `/quarter-review`, prompt to run `/career-coach-custom` for promotion assessment or monthly reflection
 
 ---
 
 ## When to Use This Command
 
-**Use `/career-coach` when:**
+**Use `/career-coach-custom` when:**
 - Processing a challenging work situation
 - Preparing for a review (weekly, monthly, annual)
 - Assessing promotion readiness

@@ -1,0 +1,23 @@
+---
+description: When creating or integrating MCP servers into Dex, always follow create-mcp guidelines
+alwaysApply: true
+---
+
+# MCP Creation Guidelines
+
+**When creating or integrating new MCP servers into Dex**, you MUST follow the guidelines in `.claude/skills/create-mcp/SKILL.md` — even if the user does not explicitly run `/create-mcp`.
+
+## Required Steps
+
+1. **Use the guided wizard process** — Understand the service, plan tools, validate schema, configure `.mcp.json`.
+
+2. **Follow the create-mcp workflow:**
+   - Clarify what service/data the user wants to connect
+   - Identify key operations and design tool schemas
+   - Implement or integrate the MCP server
+   - Configure `.mcp.json` with correct transport and env vars
+   - Validate the integration works
+
+3. **Do not build MCP integrations ad-hoc** — The wizard ensures proper structure, authentication handling, and Dex compatibility.
+
+**This applies whether the user says "build an MCP for X," "connect Dex to [service]," "create an MCP integration for...," or similar.**
