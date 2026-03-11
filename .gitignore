@@ -35,6 +35,7 @@ System/.update-available
 # Custom extensions (user-created, never in upstream)
 CLAUDE-custom.md
 .claude/skills-custom/
+.claude/skills/*-custom/
 core/mcp-custom/
 core/mcp-premium/
 
