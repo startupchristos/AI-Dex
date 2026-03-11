@@ -14,36 +14,59 @@ Tools:
 - calendar_delete_event: Delete an event
 - calendar_get_next_event: Get the next upcoming event
 - calendar_get_events_with_attendees: Get events with full attendee details
+- reminders_list_items: Get incomplete items from a Reminders list
+- reminders_complete_item: Mark a Reminder as complete
+- reminders_create_item: Create a new Reminder
+- reminders_ensure_lists: Create Dex Inbox/Today lists if missing
+- reminders_list_completed: Get recently completed Reminders for sync
+- reminders_find_and_complete: Find and complete a Reminder by title match
+- reminders_clear_completed: Remove completed Reminders from a list
 """
 
-import os
-import subprocess
 import json
 import logging
-import tempfile
+import os
 import re
-import yaml
+
+# Vault paths (centralized in core.paths)
+import sys
+import tempfile
+from datetime import date, datetime, timedelta
 from pathlib import Path
-from datetime import datetime, date, timedelta
 from typing import Optional
 
-from mcp.server import Server, NotificationOptions
-from mcp.server.models import InitializationOptions
 import mcp.server.stdio
 import mcp.types as types
+from mcp.server import NotificationOptions, Server
+from mcp.server.models import InitializationOptions
 
-# Vault paths
-VAULT_PATH = Path(os.environ.get('VAULT_PATH', Path.cwd()))
-PEOPLE_DIR = VAULT_PATH / "People"
+_repo_root = str(Path(__file__).parent.parent.parent)
+if _repo_root not in sys.path:
+    sys.path.append(_repo_root)
+from core.paths import PEOPLE_DIR
+from core.paths import VAULT_ROOT as VAULT_PATH
 
 # Health system — error queue and health reporting
 try:
     import sys as _sys
     _sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-    from core.utils.dex_logger import log_error as _log_health_error, mark_healthy as _mark_healthy
+    from core.utils.dex_logger import log_error as _log_health_error
+    from core.utils.dex_logger import mark_healthy as _mark_healthy
     _HAS_HEALTH = True
 except ImportError:
     _HAS_HEALTH = False
+
+# Timezone-aware date/time (respects user-profile.yaml timezone)
+try:
+    import sys as _sys2
+    _sys2.path.insert(0, str(Path(__file__).parent.parent.parent))
+    from core.utils.timezone import now as _tz_now
+    from core.utils.timezone import today as _tz_today
+except ImportError:
+    def _tz_now():
+        return datetime.now()
+    def _tz_today():
+        return datetime.now().date()
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -448,7 +471,117 @@ async def handle_list_tools() -> list[types.Tool]:
                 },
                 "required": []
             }
-        )
+        ),
+        # --- Apple Reminders tools ---
+        types.Tool(
+            name="reminders_list_items",
+            description="Get incomplete items from an Apple Reminders list. Use with 'Dex Inbox' to check for mobile-captured tasks.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "list_name": {
+                        "type": "string",
+                        "description": "Name of the Reminders list (default: 'Dex Inbox')"
+                    }
+                },
+                "required": []
+            }
+        ),
+        types.Tool(
+            name="reminders_complete_item",
+            description="Mark a Reminder as complete (e.g., after triaging into Dex tasks)",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "reminder_id": {
+                        "type": "string",
+                        "description": "The calendarItemIdentifier of the reminder to complete"
+                    }
+                },
+                "required": ["reminder_id"]
+            }
+        ),
+        types.Tool(
+            name="reminders_create_item",
+            description="Create a new Reminder in a specific list (e.g., push P0 tasks to 'Dex Today' for iOS notifications)",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "list_name": {
+                        "type": "string",
+                        "description": "Name of the Reminders list (default: 'Dex Today')"
+                    },
+                    "title": {
+                        "type": "string",
+                        "description": "Reminder title"
+                    },
+                    "notes": {
+                        "type": "string",
+                        "description": "Optional notes/description"
+                    },
+                    "due_date": {
+                        "type": "string",
+                        "description": "Optional due date in YYYY-MM-DD format"
+                    }
+                },
+                "required": ["title"]
+            }
+        ),
+        types.Tool(
+            name="reminders_ensure_lists",
+            description="Create 'Dex Inbox' and 'Dex Today' Reminders lists if they don't exist. Idempotent — safe to call every time.",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
+        ),
+        types.Tool(
+            name="reminders_list_completed",
+            description="Get recently completed items from a Reminders list (last 2 days). Use with 'Dex Today' to detect tasks completed on phone for sync back to Dex.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "list_name": {
+                        "type": "string",
+                        "description": "Name of the Reminders list (default: 'Dex Today')"
+                    }
+                },
+                "required": []
+            }
+        ),
+        types.Tool(
+            name="reminders_find_and_complete",
+            description="Find a Reminder by title match and mark it complete. Use for Dex → Reminders sync when a task is done in Dex.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "list_name": {
+                        "type": "string",
+                        "description": "Name of the Reminders list (default: 'Dex Today')"
+                    },
+                    "title_query": {
+                        "type": "string",
+                        "description": "Title text to match against (fuzzy substring match)"
+                    }
+                },
+                "required": ["title_query"]
+            }
+        ),
+        types.Tool(
+            name="reminders_clear_completed",
+            description="Remove all completed Reminders from a list. Use to clean up 'Dex Today' at start of day.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "list_name": {
+                        "type": "string",
+                        "description": "Name of the Reminders list (default: 'Dex Today')"
+                    }
+                },
+                "required": []
+            }
+        ),
     ]
 
 
@@ -511,7 +644,7 @@ async def _handle_call_tool_inner(
     
     elif name == "calendar_get_events":
         calendar_name = arguments.get("calendar_name", DEFAULT_WORK_CALENDAR)
-        start_date = arguments.get("start_date", datetime.now().strftime("%Y-%m-%d"))
+        start_date = arguments.get("start_date", _tz_now().strftime("%Y-%m-%d"))
         
         # Parse start date
         start_dt = datetime.strptime(start_date, "%Y-%m-%d")
@@ -523,9 +656,9 @@ async def _handle_call_tool_inner(
             end_dt = start_dt + timedelta(days=1)
         
         # Calculate days offset from today for EventKit
-        today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-        start_offset = (start_dt - today).days
-        end_offset = (end_dt - today).days
+        today_dt = datetime.combine(_tz_today(), datetime.min.time())
+        start_offset = (start_dt - today_dt).days
+        end_offset = (end_dt - today_dt).days
         
         # Use fast EventKit Python script (replaces slow AppleScript)
         success, output = run_shell_script(
@@ -570,7 +703,7 @@ async def _handle_call_tool_inner(
     
     elif name == "calendar_get_today":
         calendar_name = arguments.get("calendar_name", DEFAULT_WORK_CALENDAR)
-        today = datetime.now().strftime("%Y-%m-%d")
+        today = _tz_now().strftime("%Y-%m-%d")
         
         # Reuse get_events logic
         arguments = {"calendar_name": calendar_name, "start_date": today}
@@ -667,8 +800,8 @@ async def _handle_call_tool_inner(
                 "error": f"Invalid date format. Use 'YYYY-MM-DD', got: {event_date}"
             }, indent=2))]
         
-        today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-        day_offset = (target_dt - today).days
+        today_dt = datetime.combine(_tz_today(), datetime.min.time())
+        day_offset = (target_dt - today_dt).days
         
         success, output = run_shell_script(
             "calendar_delete_event.sh",
@@ -718,7 +851,7 @@ async def _handle_call_tool_inner(
     
     elif name == "calendar_get_events_with_attendees":
         calendar_name = arguments.get("calendar_name", DEFAULT_WORK_CALENDAR)
-        start_date = arguments.get("start_date", datetime.now().strftime("%Y-%m-%d"))
+        start_date = arguments.get("start_date", _tz_now().strftime("%Y-%m-%d"))
         
         start_dt = datetime.strptime(start_date, "%Y-%m-%d")
         if "end_date" in arguments:
@@ -726,9 +859,9 @@ async def _handle_call_tool_inner(
         else:
             end_dt = start_dt + timedelta(days=1)
         
-        today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-        start_offset = (start_dt - today).days
-        end_offset = (end_dt - today).days
+        today_dt = datetime.combine(_tz_today(), datetime.min.time())
+        start_offset = (start_dt - today_dt).days
+        end_offset = (end_dt - today_dt).days
         
         # Use fast EventKit with attendee details
         success, output = run_shell_script(
@@ -767,6 +900,96 @@ async def _handle_call_tool_inner(
         
         return [types.TextContent(type="text", text=json.dumps(result, indent=2, cls=DateTimeEncoder))]
     
+    # --- Apple Reminders handlers ---
+    elif name == "reminders_list_items":
+        list_name = arguments.get("list_name", "Dex Inbox")
+        success, output = run_shell_script("reminders_eventkit.py", "list_items", list_name)
+        if success:
+            try:
+                items = json.loads(output)
+                result = {"success": True, "list": list_name, "items": items, "count": len(items)}
+            except json.JSONDecodeError as e:
+                result = {"success": False, "error": f"JSON parse error: {e}"}
+        else:
+            result = {"success": False, "error": output}
+        return [types.TextContent(type="text", text=json.dumps(result, indent=2))]
+
+    elif name == "reminders_complete_item":
+        reminder_id = arguments["reminder_id"]
+        success, output = run_shell_script("reminders_eventkit.py", "complete", reminder_id)
+        if success:
+            try:
+                result = json.loads(output)
+            except json.JSONDecodeError:
+                result = {"success": True, "message": output}
+        else:
+            result = {"success": False, "error": output}
+        return [types.TextContent(type="text", text=json.dumps(result, indent=2))]
+
+    elif name == "reminders_create_item":
+        list_name = arguments.get("list_name", "Dex Today")
+        title = arguments["title"]
+        notes = arguments.get("notes", "")
+        due_date = arguments.get("due_date", "")
+        success, output = run_shell_script("reminders_eventkit.py", "create", list_name, title, notes, due_date)
+        if success:
+            try:
+                result = json.loads(output)
+            except json.JSONDecodeError:
+                result = {"success": True, "message": output}
+        else:
+            result = {"success": False, "error": output}
+        return [types.TextContent(type="text", text=json.dumps(result, indent=2))]
+
+    elif name == "reminders_ensure_lists":
+        success, output = run_shell_script("reminders_eventkit.py", "ensure_lists")
+        if success:
+            try:
+                result = json.loads(output)
+            except json.JSONDecodeError:
+                result = {"success": True, "message": output}
+        else:
+            result = {"success": False, "error": output}
+        return [types.TextContent(type="text", text=json.dumps(result, indent=2))]
+
+    elif name == "reminders_list_completed":
+        list_name = arguments.get("list_name", "Dex Today")
+        success, output = run_shell_script("reminders_eventkit.py", "list_completed", list_name)
+        if success:
+            try:
+                items = json.loads(output)
+                result = {"success": True, "list": list_name, "items": items, "count": len(items)}
+            except json.JSONDecodeError as e:
+                result = {"success": False, "error": f"JSON parse error: {e}"}
+        else:
+            result = {"success": False, "error": output}
+        return [types.TextContent(type="text", text=json.dumps(result, indent=2))]
+
+    elif name == "reminders_find_and_complete":
+        list_name = arguments.get("list_name", "Dex Today")
+        title_query = arguments["title_query"]
+        success, output = run_shell_script("reminders_eventkit.py", "find_and_complete", list_name, title_query)
+        if success:
+            try:
+                result = json.loads(output)
+            except json.JSONDecodeError:
+                result = {"success": True, "message": output}
+        else:
+            result = {"success": False, "error": output}
+        return [types.TextContent(type="text", text=json.dumps(result, indent=2))]
+
+    elif name == "reminders_clear_completed":
+        list_name = arguments.get("list_name", "Dex Today")
+        success, output = run_shell_script("reminders_eventkit.py", "clear_completed", list_name)
+        if success:
+            try:
+                result = json.loads(output)
+            except json.JSONDecodeError:
+                result = {"success": True, "message": output}
+        else:
+            result = {"success": False, "error": output}
+        return [types.TextContent(type="text", text=json.dumps(result, indent=2))]
+
     else:
         return [types.TextContent(type="text", text=json.dumps({
             "error": f"Unknown tool: {name}"

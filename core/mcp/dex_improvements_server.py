@@ -11,21 +11,20 @@ Provides tools for capturing and managing Dex system improvement ideas with:
 - Idea enrichment with new evidence
 """
 
-import os
-import sys
 import json
 import logging
+import os
 import re
-import glob as glob_module
-from pathlib import Path
-from typing import Dict, List, Optional, Any, Tuple
-from datetime import datetime, date, timedelta
+import sys
+from datetime import date, datetime, timedelta
 from difflib import SequenceMatcher
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
-from mcp.server import Server, NotificationOptions
-from mcp.server.models import InitializationOptions
 import mcp.server.stdio
 import mcp.types as types
+from mcp.server import NotificationOptions, Server
+from mcp.server.models import InitializationOptions
 
 # QMD semantic search (optional - gracefully degrade if not available)
 try:
@@ -46,7 +45,8 @@ except ImportError:
 # Health system — error queue and health reporting
 try:
     sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-    from core.utils.dex_logger import log_error as _log_health_error, mark_healthy as _mark_healthy
+    from core.utils.dex_logger import log_error as _log_health_error
+    from core.utils.dex_logger import mark_healthy as _mark_healthy
     _HAS_HEALTH = True
 except ImportError:
     _HAS_HEALTH = False
@@ -258,34 +258,45 @@ def save_synthesis_state(state: Dict[str, Any]):
     SYNTHESIS_STATE_FILE.write_text(json.dumps(state, indent=2, cls=DateTimeEncoder))
 
 def parse_changelog_entries(since_date: Optional[str] = None) -> List[Dict[str, str]]:
-    """Parse changelog-log.md into structured entries, optionally filtered by date"""
+    """Parse changelog-log.md into structured entries, optionally filtered by date.
+    
+    Handles two formats:
+    - Date headers: ## YYYY-MM-DD
+    - Version headers: ### vX.X.X (under a date header)
+    - Feature lines: - Feature description
+    """
     if not CHANGELOG_FILE.exists():
         return []
 
     content = CHANGELOG_FILE.read_text()
     entries = []
     current_date = None
+    current_version = None
 
     for line in content.splitlines():
-        date_match = re.match(r'^## (\d{4}-\d{2}-\d{2})', line)
+        date_match = re.match(r'^##\s+(\d{4}-\d{2}-\d{2})\s*$', line)
         if date_match:
             current_date = date_match.group(1)
             continue
 
-        version_match = re.match(r'^### (v[\d.]+)', line)
-        if version_match and current_date:
+        version_match = re.match(r'^#{2,3}\s+v(\S+?)(?:\s*[-–—]\s*(\d{4}-\d{2}-\d{2}))?', line)
+        if version_match:
             current_version = version_match.group(1)
+            if version_match.group(2):
+                current_date = version_match.group(2)
             continue
 
-        if line.startswith('- ') and current_date:
-            feature_text = line[2:].strip()
+        if line.strip().startswith('- ') and current_date:
+            feature_text = line.strip()[2:].strip()
+            if not feature_text or len(feature_text) < 10:
+                continue
 
             if since_date and current_date < since_date:
                 continue
 
             entries.append({
                 "date": current_date,
-                "version": current_version if 'current_version' in dir() else "",
+                "version": current_version or "",
                 "feature": feature_text,
             })
 
@@ -411,46 +422,293 @@ def enrich_idea_in_backlog(idea_id: str, evidence: str, source: str) -> Dict[str
 
     return {"success": True, "idea_id": idea_id, "evidence_added": evidence[:100] + "..."}
 
-def add_ai_idea_to_backlog(idea_id: str, title: str, description: str, category: str, source: str, score: int = 0) -> bool:
-    """Add an AI-authored idea to the Dex backlog file"""
+def insert_idea_into_priority_queue(idea_id: str, title: str, description: str, category: str, score: int = 0, author: str = None, source: str = None) -> bool:
+    """Insert an idea into the correct priority section based on score.
+    
+    Works for both user-captured and AI-discovered ideas. Ideas are placed
+    in High (85+), Medium (60-84), or Low (<60) priority sections.
+    """
     if not BACKLOG_FILE.exists():
         initialize_backlog_file()
 
     content = BACKLOG_FILE.read_text()
     captured_date = datetime.now().strftime('%Y-%m-%d')
 
-    idea_entry = f"""- **[{idea_id}]** {title}
-  - **Author:** AI ({source})
-  - **Score:** {score} (not yet ranked - run `/dex-backlog` to calculate)
-  - **Category:** {category}
-  - **Captured:** {captured_date}
-  - **Source:** {source}
-  - **Description:** {description}
+    lines = [f"- **[{idea_id}]** {title}"]
+    if author:
+        lines.append(f"  - **Author:** {author}")
+    lines.append(f"  - **Score:** {score}{'' if score > 0 else ' (not yet ranked - run `/dex-backlog` to calculate)'}")
+    lines.append(f"  - **Category:** {category}")
+    lines.append(f"  - **Captured:** {captured_date}")
+    if source:
+        lines.append(f"  - **Source:** {source}")
+    lines.append(f"  - **Description:** {description}")
+    lines.append("")
 
-"""
+    idea_entry = "\n".join(lines) + "\n"
 
-    ai_section_pattern = r'(### 🤖 AI-Discovered Ideas.*?\n(?:.*?\n)*?)\n---'
-    match = re.search(ai_section_pattern, content)
-    if match:
-        insert_pos = match.end() - 3
-        new_content = content[:insert_pos] + idea_entry + content[insert_pos:]
+    if score >= 85:
+        section_pattern = r'(### 🔥 High Priority \(Score: 85\+\)\s*\n(?:\s*\*[^*]+\*\s*\n)?)'
+    elif score >= 60:
+        section_pattern = r'(### ⚡ Medium Priority \(Score: 60-84\)\s*\n(?:\s*\*[^*]+\*\s*\n)?)'
     else:
-        low_priority_pattern = r'(### 💡 (?:Low|Lower) Priority.*?\n(?:\s*\*.*?\*\s*\n)?)'
-        match = re.search(low_priority_pattern, content)
-        if match:
-            insert_pos = match.end()
-            new_content = content[:insert_pos] + '\n' + idea_entry + content[insert_pos:]
+        section_pattern = r'(### 💡 (?:Low|Lower) Priority \(Score: <60\)\s*\n(?:\s*\*[^*]+\*\s*\n)?)'
+
+    match = re.search(section_pattern, content)
+    if match:
+        insert_pos = match.end()
+        new_content = content[:insert_pos] + "\n" + idea_entry + content[insert_pos:]
+    else:
+        fallback = re.search(r'(## Archive|## Summary|---\s*$)', content)
+        if fallback:
+            insert_pos = fallback.start()
+            new_content = content[:insert_pos] + idea_entry + "\n" + content[insert_pos:]
         else:
-            archive_pattern = r'(## Archive|## Summary|---\s*$)'
-            match = re.search(archive_pattern, content)
-            if match:
-                insert_pos = match.start()
-                new_content = content[:insert_pos] + idea_entry + '\n' + content[insert_pos:]
-            else:
-                new_content = content + '\n' + idea_entry
+            new_content = content + "\n" + idea_entry
 
     BACKLOG_FILE.write_text(new_content)
     return True
+
+
+def add_ai_idea_to_backlog(idea_id: str, title: str, description: str, category: str, source: str, score: int = 0) -> bool:
+    """Add an AI-discovered idea to the backlog, routed by score into the priority queue."""
+    return insert_idea_into_priority_queue(
+        idea_id, title, description, category,
+        score=score, author=f"AI ({source})", source=source
+    )
+
+
+# ============================================================================
+# BACKLOG HYGIENE — Redundancy & Staleness Detection
+# ============================================================================
+
+BACKLOG_TARGET_MAX = 20
+STALE_THRESHOLD_DAYS = 90
+AI_SHELF_LIFE_DAYS = 30
+AI_LOW_CONVICTION_SCORE = 55
+
+def _scan_skill_names() -> List[Dict[str, str]]:
+    """Scan .claude/skills/ for available skill names and descriptions."""
+    skills = []
+    skills_dir = BASE_DIR / '.claude' / 'skills'
+    if not skills_dir.exists():
+        return skills
+    for skill_dir in skills_dir.iterdir():
+        if not skill_dir.is_dir() or skill_dir.name.startswith(('_', '.')):
+            continue
+        skill_file = skill_dir / 'SKILL.md'
+        if not skill_file.exists():
+            continue
+        try:
+            content = skill_file.read_text()
+            desc_match = re.search(r'^description:\s*(.+)$', content, re.MULTILINE)
+            desc = desc_match.group(1).strip() if desc_match else ''
+            skills.append({'name': skill_dir.name, 'description': desc})
+        except Exception:
+            skills.append({'name': skill_dir.name, 'description': ''})
+    return skills
+
+
+def _scan_mcp_tool_names() -> List[Dict[str, str]]:
+    """Scan core/mcp/*.py for MCP tool names and descriptions."""
+    tools = []
+    mcp_dir = BASE_DIR / 'core' / 'mcp'
+    if not mcp_dir.exists():
+        mcp_dir = Path(__file__).parent
+    for py_file in mcp_dir.glob('*.py'):
+        if py_file.name.startswith('_'):
+            continue
+        try:
+            content = py_file.read_text()
+            for m in re.finditer(r'name="([^"]+)".*?description="([^"]*)"', content, re.DOTALL):
+                tools.append({'name': m.group(1), 'description': m.group(2)[:200]})
+        except Exception:
+            continue
+    return tools
+
+
+def _scan_shipped_wip() -> List[Dict[str, str]]:
+    """Parse Work_In_Progress.md for shipped/completed items."""
+    shipped = []
+    wip_file = BASE_DIR / 'System' / 'Work_In_Progress.md'
+    if not wip_file.exists():
+        return shipped
+    try:
+        content = wip_file.read_text()
+        sections = content.split('### ')
+        for section in sections[1:]:
+            title_line = section.split('\n')[0].strip()
+            title = re.sub(r'^[⭐🔥💡\d]+\.?\s*', '', title_line).strip()
+            status_match = re.search(r'\*\*Status:\*\*\s*(.*)', section)
+            status = status_match.group(1).strip() if status_match else ''
+            if any(kw in status.lower() for kw in ['shipped', 'completed', '✅']):
+                shipped.append({'title': title, 'status': status})
+    except Exception:
+        pass
+    return shipped
+
+
+def _scan_capabilities_done() -> List[str]:
+    """Read latest capabilities report for items marked Done in the backlog table."""
+    done_items = []
+    reports_dir = BASE_DIR / '06-Resources' / 'Intel' / 'Claude_Code_Intel' / 'reports'
+    if not reports_dir.exists():
+        return done_items
+    report_files = sorted(reports_dir.glob('capabilities-*.md'), reverse=True)
+    if not report_files:
+        return done_items
+    try:
+        content = report_files[0].read_text()
+        for m in re.finditer(r'\|\s*(.+?)\s*\|.*?\|\s*✅\s*Done\s*\|', content):
+            done_items.append(m.group(1).strip())
+    except Exception:
+        pass
+    return done_items
+
+
+def _parse_author(idea_block: str) -> Optional[str]:
+    """Extract author from an idea's metadata block."""
+    m = re.search(r'\*\*Author:\*\*\s*(.+?)(?:\n|$)', idea_block)
+    return m.group(1).strip() if m else None
+
+
+def _parse_enrichment_dates(idea_block: str) -> List[str]:
+    """Extract enrichment dates from 'Why Now?' annotations."""
+    return re.findall(r'AI-enriched\s+(\d{4}-\d{2}-\d{2})', idea_block)
+
+
+def validate_backlog_ideas() -> Dict[str, Any]:
+    """Run redundancy and staleness checks on all active backlog ideas.
+
+    Returns a structured report with recommended actions per idea.
+    """
+    ideas = parse_backlog_file()
+    active = [i for i in ideas if i['status'] == 'active']
+
+    if not active:
+        return {"validated": 0, "actions": [], "healthy": 0,
+                "target": BACKLOG_TARGET_MAX, "over_target_by": 0}
+
+    # Gather system state once
+    skills = _scan_skill_names()
+    mcp_tools = _scan_mcp_tool_names()
+    shipped_wip = _scan_shipped_wip()
+    cap_done = _scan_capabilities_done()
+
+    # Build combined text corpus for matching
+    skill_texts = [f"{s['name']} {s['description']}" for s in skills]
+    mcp_texts = [f"{t['name']} {t['description']}" for t in mcp_tools]
+    wip_texts = [s['title'] for s in shipped_wip]
+
+    # Read raw backlog for author/enrichment parsing
+    backlog_content = BACKLOG_FILE.read_text() if BACKLOG_FILE.exists() else ''
+
+    today = datetime.now()
+    actions = []
+
+    for idea in active:
+        idea_text = f"{idea['title']} {idea.get('description', '')}"
+        idea_lower = idea_text.lower()
+
+        # Extract author + enrichment dates from raw file
+        idea_pattern = rf'-\s*\*\*\[{re.escape(idea["id"])}\]\*\*.*?(?=\n-\s*\*\*\[idea-|\n###|\n##|$)'
+        block_match = re.search(idea_pattern, backlog_content, re.DOTALL)
+        idea_block = block_match.group(0) if block_match else ''
+        author = _parse_author(idea_block)
+        enrichment_dates = _parse_enrichment_dates(idea_block)
+
+        best_action = None
+        best_confidence = 0.0
+        best_reason = ''
+
+        # --- Redundancy Check 1: Skill overlap ---
+        for st in skill_texts:
+            sim = calculate_similarity(idea_lower, st.lower())
+            if sim > 0.6 and sim > best_confidence:
+                skill_name = st.split(' ')[0]
+                best_action = 'kill'
+                best_confidence = round(sim, 2)
+                best_reason = f"Skill /{skill_name} already provides this capability"
+
+        # --- Redundancy Check 2: MCP tool overlap ---
+        for mt in mcp_texts:
+            sim = calculate_similarity(idea_lower, mt.lower())
+            if sim > 0.6 and sim > best_confidence:
+                tool_name = mt.split(' ')[0]
+                best_action = 'kill'
+                best_confidence = round(sim, 2)
+                best_reason = f"MCP tool '{tool_name}' already provides this"
+
+        # --- Redundancy Check 3: WIP shipped overlap ---
+        for wt in wip_texts:
+            sim = calculate_similarity(idea_lower, wt.lower())
+            if sim > 0.55 and sim > best_confidence:
+                best_action = 'kill'
+                best_confidence = round(sim, 2)
+                best_reason = f"Shipped in WIP: '{wt}'"
+
+        # --- Redundancy Check 4: Capabilities report "Done" items ---
+        for done_item in cap_done:
+            sim = calculate_similarity(idea_lower, done_item.lower())
+            if sim > 0.5:
+                if sim > best_confidence:
+                    best_action = 'kill'
+                    best_confidence = round(sim, 2)
+                    best_reason = f"Capabilities report marked done: '{done_item}'"
+                elif sim > 0.35 and best_confidence < 0.5:
+                    best_action = 'downrank'
+                    best_confidence = round(sim, 2)
+                    best_reason = f"Partially addressed by capabilities report: '{done_item}'"
+
+        # --- Staleness Check 1: Age decay ---
+        captured_date = idea.get('captured', '')
+        if captured_date and not best_action:
+            try:
+                cap_dt = datetime.strptime(captured_date, '%Y-%m-%d')
+                age_days = (today - cap_dt).days
+                last_enriched = max(enrichment_dates) if enrichment_dates else captured_date
+                last_enriched_dt = datetime.strptime(last_enriched, '%Y-%m-%d')
+                days_since_touch = (today - last_enriched_dt).days
+
+                if age_days >= STALE_THRESHOLD_DAYS and days_since_touch >= STALE_THRESHOLD_DAYS:
+                    best_action = 'archive_stale'
+                    best_confidence = round(min(0.5 + (age_days - STALE_THRESHOLD_DAYS) / 180, 0.9), 2)
+                    best_reason = f"Idea is {age_days} days old with no enrichment in {days_since_touch} days"
+            except ValueError:
+                pass
+
+        # --- Staleness Check 2: AI low-conviction shelf life ---
+        if not best_action and author and 'AI' in author:
+            try:
+                cap_dt = datetime.strptime(captured_date, '%Y-%m-%d')
+                age_days = (today - cap_dt).days
+                if age_days >= AI_SHELF_LIFE_DAYS and idea.get('score', 0) < AI_LOW_CONVICTION_SCORE:
+                    best_action = 'archive_stale'
+                    best_confidence = round(0.6 + (age_days - AI_SHELF_LIFE_DAYS) / 120, 2)
+                    best_reason = (f"AI-generated idea, score {idea.get('score', 0)} "
+                                   f"(below {AI_LOW_CONVICTION_SCORE}), {age_days} days old")
+            except ValueError:
+                pass
+
+        if best_action:
+            actions.append({
+                'id': idea['id'],
+                'title': idea['title'],
+                'score': idea.get('score', 0),
+                'action': best_action,
+                'reason': best_reason,
+                'confidence': min(best_confidence, 0.99),
+            })
+
+    healthy = len(active) - len(actions)
+    return {
+        "validated": len(active),
+        "actions": sorted(actions, key=lambda a: a['confidence'], reverse=True),
+        "healthy": healthy,
+        "target": BACKLOG_TARGET_MAX,
+        "over_target_by": max(0, len(active) - BACKLOG_TARGET_MAX),
+        "last_validation": today.strftime('%Y-%m-%d'),
+    }
 
 
 def initialize_backlog_file():
@@ -514,44 +772,8 @@ Ideas are automatically ranked on 5 dimensions:
     logger.info(f"Created Dex backlog file at {BACKLOG_FILE}")
 
 def add_idea_to_backlog(idea_id: str, title: str, description: str, category: str) -> bool:
-    """Add a new idea to the Dex backlog file"""
-    if not BACKLOG_FILE.exists():
-        initialize_backlog_file()
-    
-    content = BACKLOG_FILE.read_text()
-    
-    # Create the idea entry
-    captured_date = datetime.now().strftime('%Y-%m-%d')
-    
-    idea_entry = f"""- **[{idea_id}]** {title}
-  - **Score:** 0 (not yet ranked - run `/dex-backlog` to calculate)
-  - **Category:** {category}
-  - **Captured:** {captured_date}
-  - **Description:** {description}
-
-"""
-    
-    # Find the "Low Priority" section and add the idea there
-    # Ideas start unranked and get scored during review
-    low_priority_pattern = r'(### 💡 Low Priority \(Score: <60\)\s*\n\s*(?:\*.*?\*\s*\n\s*)?)'
-    
-    match = re.search(low_priority_pattern, content)
-    if match:
-        insert_pos = match.end()
-        new_content = content[:insert_pos] + '\n' + idea_entry + content[insert_pos:]
-    else:
-        # Fallback: add before Archive section
-        archive_pattern = r'(## Archive \(Implemented\))'
-        match = re.search(archive_pattern, content)
-        if match:
-            insert_pos = match.start()
-            new_content = content[:insert_pos] + idea_entry + '\n' + content[insert_pos:]
-        else:
-            # Last resort: append to end
-            new_content = content + '\n' + idea_entry
-    
-    BACKLOG_FILE.write_text(new_content)
-    return True
+    """Add a user-captured idea to the backlog (unranked, goes to Low Priority)."""
+    return insert_idea_into_priority_queue(idea_id, title, description, category, score=0)
 
 def mark_idea_implemented(idea_id: str, implementation_date: Optional[str] = None) -> Dict[str, Any]:
     """Mark an idea as implemented and move to archive"""
@@ -770,6 +992,14 @@ async def handle_list_tools() -> list[types.Tool]:
                 "required": ["idea_id", "evidence", "source"]
             }
         ),
+        types.Tool(
+            name="validate_backlog",
+            description="Run redundancy and staleness checks on all active backlog ideas. Checks against existing skills, MCP tools, shipped WIP items, and capabilities reports. Returns flagged ideas to kill, downrank, or archive. Call before /dex-backlog scoring or after /capabilities-report.",
+            inputSchema={
+                "type": "object",
+                "properties": {}
+            }
+        ),
     ]
 
 @app.call_tool()
@@ -834,7 +1064,7 @@ async def _handle_call_tool_inner(
                 "idea_id": idea_id,
                 "title": title,
                 "category": category,
-                "message": f"Idea captured successfully! Run `/dex-backlog` to see it ranked against other ideas.",
+                "message": "Idea captured successfully! Run `/dex-backlog` to see it ranked against other ideas.",
                 "next_steps": [
                     "Run `/dex-backlog` to see AI-powered ranking",
                     "Run `/dex-improve \"{title}\"` to workshop this idea",
@@ -933,6 +1163,40 @@ async def _handle_call_tool_inner(
         
         # Synthesis state
         state = load_synthesis_state()
+
+        # --- Health metrics ---
+        today = datetime.now()
+        backlog_content = BACKLOG_FILE.read_text() if BACKLOG_FILE.exists() else ''
+        stale_count = 0
+        ai_low_conviction_count = 0
+
+        for idea in active_ideas:
+            captured = idea.get('captured', '')
+            if not captured:
+                continue
+            try:
+                cap_dt = datetime.strptime(captured, '%Y-%m-%d')
+                age_days = (today - cap_dt).days
+            except ValueError:
+                continue
+
+            # Extract block for author + enrichment
+            block_pat = rf'-\s*\*\*\[{re.escape(idea["id"])}\]\*\*.*?(?=\n-\s*\*\*\[idea-|\n###|\n##|$)'
+            bm = re.search(block_pat, backlog_content, re.DOTALL)
+            block = bm.group(0) if bm else ''
+            enrichments = _parse_enrichment_dates(block)
+            last_touch = max(enrichments) if enrichments else captured
+            try:
+                days_since = (today - datetime.strptime(last_touch, '%Y-%m-%d')).days
+            except ValueError:
+                days_since = age_days
+
+            if age_days >= STALE_THRESHOLD_DAYS and days_since >= STALE_THRESHOLD_DAYS:
+                stale_count += 1
+
+            author = _parse_author(block)
+            if author and 'AI' in author and age_days >= AI_SHELF_LIFE_DAYS and idea.get('score', 0) < AI_LOW_CONVICTION_SCORE:
+                ai_low_conviction_count += 1
         
         result = {
             "total_ideas": len(ideas),
@@ -943,6 +1207,14 @@ async def _handle_call_tool_inner(
                 "high (85+)": high_priority,
                 "medium (60-84)": medium_priority,
                 "low (<60)": low_priority
+            },
+            "health": {
+                "active_count": len(active_ideas),
+                "target_max": BACKLOG_TARGET_MAX,
+                "over_target_by": max(0, len(active_ideas) - BACKLOG_TARGET_MAX),
+                "stale_count": stale_count,
+                "ai_low_conviction_count": ai_low_conviction_count,
+                "last_validation": state.get("last_validation_date"),
             },
             "last_changelog_synthesis": state.get("last_changelog_synthesis"),
             "last_learnings_synthesis": state.get("last_learnings_synthesis"),
@@ -1021,7 +1293,7 @@ async def _handle_call_tool_inner(
                     f"Claude Code {version_info} ({entry['date']}) shipped: {feature_text}. "
                     f"Evaluate how Dex could leverage this for user workflows."
                 )
-                source = f"Anthropic Changelog Synthesis"
+                source = "Anthropic Changelog Synthesis"
 
                 success = add_ai_idea_to_backlog(idea_id, title, description, category, source)
                 if success:
@@ -1167,6 +1439,10 @@ async def _handle_call_tool_inner(
         result = enrich_idea_in_backlog(idea_id, evidence, source)
         return [types.TextContent(type="text", text=json.dumps(result, indent=2, cls=DateTimeEncoder))]
 
+    elif name == "validate_backlog":
+        result = validate_backlog_ideas()
+        return [types.TextContent(type="text", text=json.dumps(result, indent=2, cls=DateTimeEncoder))]
+
     else:
         return [types.TextContent(type="text", text=f"Unknown tool: {name}")]
 
@@ -1174,7 +1450,7 @@ async def _main():
     """Async main entry point for the MCP server"""
     if _HAS_HEALTH:
         _mark_healthy("dex-improvements-mcp")
-    logger.info(f"Starting Dex Improvements MCP Server")
+    logger.info("Starting Dex Improvements MCP Server")
     logger.info(f"Vault path: {BASE_DIR}")
     logger.info(f"Backlog file: {BACKLOG_FILE}")
     

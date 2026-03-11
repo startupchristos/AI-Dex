@@ -257,7 +257,7 @@ After completing any mode:
 - Day-to-day task management (use `/daily-plan`)
 - Project status updates (use `/project-health`)
 - Meeting prep (use `/meeting-prep`)
-- Evaluating external roles or preparing job applications (use `/job-opportunity`)
+- Evaluating external roles or preparing job applications (use `/job-opportunity-custom`)
 
 ---
 

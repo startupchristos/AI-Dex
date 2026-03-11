@@ -1,49 +1,32 @@
-# Dex — Your AI Chief of Staff
+# Dex by Dave — Your AI Chief of Staff
 
-**A personal operating system powered by Claude.**
-
-Clone this repo, run the installer, type `/setup` in Claude, tell it your role — and in 10 minutes you have a working system tailored to how you work. Strategic work management, meeting intelligence, relationship tracking, daily planning. All configured for whether you're a CMO, a sales leader, a PM, or any of 31 roles.
-
-No coding required. Just [Cursor](https://cursor.com) and conversation.
+**A personal operating system powered by Claude.** Strategic work management, meeting intelligence, relationship tracking, daily planning — all configured for your specific role. No coding required.
 
 Companion to [Episode 8 of The Vibe PM Podcast](https://youtu.be/WaqgSvL-V10?si=b2Pfwf7I5rozWCo0) and the [full blog post](https://www.linkedin.com/pulse/your-ai-chief-staff-building-personal-operating-system-dave-killeen-yxnqe/).
 
 ---
 
-## Who This Is For
+## Setup Overview
 
-Non-engineers.
+**Total time:** ~10 minutes. Three steps: install tools → get the code → tell it your role.
 
-Product managers, marketers, sales leaders, designers, executives, HR leaders, consultants, coaches, analysts — anyone who wants the same leverage from AI that technical people have had access to.
+**Pick one of these to get started:**
 
-**You don't need to know how to code.** Just follow the setup and talk to your AI assistant.
+| Option | Cost | What It Is |
+|--------|------|------------|
+| **[Cursor](https://cursor.com)** | Free tier works, or $20/month for Pro | An app with a built-in AI assistant (Claude). No separate Claude account needed. |
+| **[Claude Code Desktop](https://claude.ai/download)** | Claude Pro $20/month | Anthropic's own app. Better experience — guaranteed self-learning hooks, automatic context loading. |
+| **Claude Code Terminal** | Claude Pro $20/month | Same as Desktop but runs in Terminal (Mac) or PowerShell (Windows). |
 
-**If you're an engineer:** Share this with your non-technical colleagues. Distribute Dex across your organization to accelerate AI fluency adoption. When teams build shared understanding of what AI can reliably do (not just chat interfaces, but actual operating systems), you compete far more effectively.
+> **You do NOT go to claude.ai and type commands.** You need one of the apps above. Cursor is the easiest starting point. Claude Code (Desktop or Terminal) gives you a better experience with self-learning hooks — setup instructions for those are [further down this page](#want-guaranteed-hooks-use-claude-code-cli-or-desktop-app).
 
----
-
-## Built to Teach: The AI Fluency Catalyst
-
-Most people in tech use AI as a chat interface - asking questions, getting answers, starting fresh every time. They've seen the demos but don't understand how to move beyond that. The gap between what's possible and what people actually use continues to widen.
-
-Dex addresses this by giving you a working system immediately. No learning curve, no setup burden.
-
-The system automates cognitive overhead - you reclaim hours in your day. Meeting prep happens automatically. Commitments don't slip. Context is always available before calls. The time you save compounds: less administrative work means more focus on strategic work and career-advancing goals.
-
-The system teaches you as you go. Start shallow, go deep as you get curious. Two weeks of daily practice and you're in flow. By month one, you don't just have a working system - you understand how to build systems.
-
-**For teams and organizations:** One person adopts Dex, sees the value, shares it with colleagues. Technical leaders can distribute the repo (everyone gets the same foundation, adapted to their role) or share demo mode (let people explore without committing their own data). Teams develop common language around what AI can reliably do. Your organization moves from AI demos to AI operations.
-
-**Want to share this?** Point colleagues to the [companion blog post](https://www.linkedin.com/pulse/your-ai-chief-staff-building-personal-operating-system-dave-killeen-yxnqe/) for the full story with more detail and color about how everything comes together. At the bottom of this README, there's a ready-to-use message you can copy and paste to share with your team - makes it easy to accelerate AI fluency adoption across your organization.
+**Not sure which?** Start with Cursor — it's free and gets you running in minutes. You can add or switch to Claude Code later.
 
 ---
 
 ## Getting Started
 
-<details>
-<summary><strong>Click to expand setup and installation guide</strong></summary>
-
-### What You'll Need
+### What You'll Need to Install (One-Time)
 
 1. **[Cursor](https://cursor.com/)** - Download and install (free account works fine)
 2. **[Git](https://git-scm.com)** - Required for setup and updates
@@ -161,10 +144,28 @@ Copy and paste this command and press Enter:
 
 ```bash
 python3 -m pip install --upgrade pip
-pip3 install --user mcp pyyaml
+pip3 install --user "mcp>=1.0.0,<2.0.0" pyyaml python-dateutil
 ```
 
 Then restart Cursor.
+
+<details>
+<summary><strong>Use Google Calendar? Connect it so Dex shows your meetings (Mac)</strong></summary>
+
+If you use **Google Calendar**, you can have Dex show your real meetings when you run `/daily-plan` or ask "what's on my calendar today?" Two steps, one-time setup (Mac only):
+
+**Step 1 — Add Google to your Mac's Calendar app**  
+Open the **Calendar** app (the one that came with your Mac). In the menu bar, click **Calendar** → **Add Account…** → choose **Google** → sign in with your Google account. Your Google events will sync into Calendar. Dex reads from this app, so once Google is here, Dex sees your meetings.
+
+**Step 2 — Let Cursor use your calendar**  
+Open **System Settings** → **Privacy & Security** → **Calendars**. Turn **Cursor** on, then click **Cursor** and choose **Full** access (not "Add Only") so Dex can read your events. If macOS pops up asking "Cursor would like to access your calendars", click **Allow**.
+
+That's it. The installer already set up the rest on Mac. Your meetings—including recurring ones like weekly 1:1s—will show on the correct days in Dex.
+
+**More detail and troubleshooting:** [Calendar_Setup.md](06-Resources/Dex_System/Calendar_Setup.md) (in your vault after setup).  
+**On Windows?** Calendar connection is supported on Mac via Apple Calendar. We don't have Windows instructions in this repo yet.
+
+</details>
 
 ⚠️ **IMPORTANT: Complete Step 3 now to configure your role - this is what makes Dex work.**
 
@@ -228,14 +229,14 @@ The installer tries two methods automatically. If both fail, your pip version mi
 
 ```bash
 python3 -m pip install --upgrade pip
-pip3 install --user mcp pyyaml
+pip3 install --user "mcp>=1.0.0,<2.0.0" pyyaml python-dateutil
 ```
 
 **Windows:**
 
 ```bash
 python -m pip install --upgrade pip
-pip install --user mcp pyyaml
+pip install --user "mcp>=1.0.0,<2.0.0" pyyaml python-dateutil
 ```
 
 ---
@@ -250,7 +251,7 @@ This means the Python MCP servers can't start. Most common fix (upgrade pip firs
 
 ```bash
 python3 -m pip install --upgrade pip
-pip3 install --user mcp pyyaml
+pip3 install --user "mcp>=1.0.0,<2.0.0" pyyaml python-dateutil
 ```
 
 Then **restart Cursor completely** (Cmd+Q and reopen, or File → Quit).
@@ -284,6 +285,18 @@ Check the MCP server output:
 2. Click "Show Output"
 3. Look for the specific error message
 4. Common issues: missing Python packages, wrong file paths, Python version too old
+
+---
+
+### Mac: Calendar empty, wrong dates, or "Calendar access denied"
+
+If `/daily-plan` doesn't show your meetings, or your recurring meetings (e.g. weekly 1:1s) show on the wrong day or are missing:
+
+1. **Add Google to the Calendar app** — Open **Calendar** (Mac's built-in app) → **Calendar** → **Add Account…** → **Google** → sign in. Dex reads from this app.
+2. **Let Cursor see your calendar** — **System Settings** → **Privacy & Security** → **Calendars** → turn **Cursor** on, then click **Cursor** and set access to **Full** (not "Add Only"). Restart Cursor after changing it.
+3. **If you skipped the installer or fixed Python yourself** — The installer normally sets up calendar support on Mac. If you didn't run it or installed packages by hand, in Terminal run: `pip3 install --user pyobjc-framework-EventKit`, then restart Cursor.
+
+See **[Calendar_Setup.md](06-Resources/Dex_System/Calendar_Setup.md)** for the full guide.
 
 </details>
 
@@ -460,7 +473,17 @@ claude
 
 **Which option?** Desktop app for visual interface. Command line for those comfortable in Terminal/PowerShell. Both give you the same guaranteed hooks capability.
 
-</details>
+---
+
+## Who This Is For
+
+Non-engineers. Product managers, marketers, sales leaders, designers, executives, HR leaders, consultants, coaches, analysts — anyone who wants the same leverage from AI that technical people have had access to.
+
+**You don't need to know how to code.** Just follow the setup above and talk to your AI assistant.
+
+**If you're an engineer:** Share this with your non-technical colleagues. Distribute Dex across your organization to accelerate AI fluency adoption.
+
+**Want to share this?** Point colleagues to the [companion blog post](https://www.linkedin.com/pulse/your-ai-chief-staff-building-personal-operating-system-dave-killeen-yxnqe/) for the full story. At the bottom of this README, there's a ready-to-use message you can copy and paste.
 
 ---
 
@@ -729,6 +752,7 @@ Comprehensive guides included in the repo:
 - [Dex_System_Guide.md](06-Resources/Dex_System/Dex_System_Guide.md) - Complete feature reference and workflows
 - [Dex_Jobs_to_Be_Done.md](06-Resources/Dex_System/Dex_Jobs_to_Be_Done.md) - Why each piece exists and how they connect
 - [Dex_Technical_Guide.md](06-Resources/Dex_System/Dex_Technical_Guide.md) - Technical deep dive for those who want it
+- [Calendar_Setup.md](06-Resources/Dex_System/Calendar_Setup.md) - Connect Google Calendar to Dex (Mac)
 - [Folder_Structure.md](06-Resources/Dex_System/Folder_Structure.md) - PARA organization explained
 - [Updating_Dex.md](06-Resources/Dex_System/Updating_Dex.md) - How to safely update while preserving customizations
 
@@ -879,10 +903,20 @@ Thanks to [Noah Brier](https://github.com/heyitsnoah/claudesidian) for the Claud
 
 ---
 
-## License
+## Contributing
 
-MIT
+Made an improvement to your Dex setup? Fixed something that was bugging you? Built a skill that others could use? Dave would love to see it.
+
+**You don't need to be a developer.** Just tell Claude "I want to share my changes with the Dex community" and it'll walk you through the process. See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide.
 
 ---
 
-Run `/setup` to get started.
+## License
+
+PolyForm Noncommercial 1.0.0.
+
+Commercial use is not allowed without a separate written commercial license from Dave Killeen. See `LICENSE` and `COMMERCIAL_LICENSE.md` for details.
+
+---
+
+**Ready to start?** Follow the [setup instructions above](#getting-started) — install Cursor, get the code, run `/setup` inside Cursor's chat panel.

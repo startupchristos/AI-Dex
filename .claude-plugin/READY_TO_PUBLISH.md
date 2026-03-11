@@ -16,7 +16,7 @@
 - [x] 9 MCP Servers in `.claude/mcp/` and `core/mcp/`
 - [x] Session hooks in `.claude/hooks/`
 - [x] Comprehensive documentation in `06-Resources/Dex_System/`
-- [x] LICENSE file (MIT)
+- [x] LICENSE file (PolyForm Noncommercial 1.0.0)
 - [x] CHANGELOG.md (detailed version history)
 - [x] README.md (comprehensive overview)
 

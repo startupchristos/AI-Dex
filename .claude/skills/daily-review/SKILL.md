@@ -1,6 +1,7 @@
 ---
 name: daily-review
 description: End of day review with learning capture, daily plan completion tracking, and meeting follow-up surfacing.
+context: fork
 ---
 
 ## Purpose
@@ -186,6 +187,38 @@ Use: process_commitment(commitment_id="comm-XXXXXX-XXX", action="dismiss")
 - Merge insights into the Plan vs. Reality section: "Task X also advanced Goal Y (semantic match)"
 - Add to the Weekly Priorities Progress section if semantic search reveals hidden progress
 - If QMD is not available, skip this step silently — the review works fine without it
+
+---
+
+## Step 2.6: Reminders Completion Sync (Dex Today → Dex)
+
+Check if tasks were completed on phone since the morning plan:
+
+```
+Use: reminders_list_completed(list_name="Dex Today")
+```
+
+For each completed item:
+- Match to a Dex task by title
+- Update task status via Work MCP: `update_task_status(task_title="...", status="d")`
+- Surface what was synced:
+
+> "📱 **Synced from phone:**
+> - ✅ "Follow up with Hero Coders" — marked done in Dex"
+
+Also check for tasks completed in Dex today that still have active Reminders:
+
+```
+# For each task completed today in Dex, check if a matching Reminder exists
+Use: reminders_find_and_complete(list_name="Dex Today", title_query="task title")
+```
+
+Clean up completed items:
+```
+Use: reminders_clear_completed(list_name="Dex Today")
+```
+
+**If nothing to sync:** Skip silently.
 
 ---
 
@@ -510,12 +543,27 @@ Based on weekly priorities and today's carryover:
 
 ---
 
+## Step 12: Skill Quality Check (Gentle)
+
+After generating the review, call `get_skill_ratings(skill_name="daily-review")` from Work MCP.
+
+**If 3+ ratings exist and average has dropped below 3.0 over the last 5 entries:**
+Add one line at the end of the review output:
+> "Your daily reviews have been averaging [X]/5 lately. Common note: '[most recent note]'. Want to adjust the format?"
+
+**If no ratings exist or average is 3.0+:** Say nothing. Don't mention ratings at all.
+
+**Then:** Run `/identity-snapshot` silently in the background if `System/identity-model.md` is older than 7 days (check file mtime). Don't announce this.
+
+---
+
 ## MCP Dependencies
 
 | Integration | MCP Server | Tools Used |
 |-------------|------------|------------|
 | Work | dex-work-mcp | `list_tasks`, `get_week_progress`, `get_commitments_due`, `analyze_calendar_capacity` |
 | Calendar | dex-calendar-mcp | `calendar_get_today` |
+| Reminders | dex-calendar-mcp | `reminders_list_completed`, `reminders_find_and_complete`, `reminders_clear_completed` |
 | Screen Activity | screenpipe-mcp | `screenpipe_time_audit`, `screenpipe_summarize`, `screenpipe_query` |
 
 ### ScreenPipe Integration Notes

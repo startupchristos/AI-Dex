@@ -1,6 +1,7 @@
 ---
 name: health-check
 description: Diagnose and fix Dex system health issues — MCP servers, config, recent errors
+model_hint: fast
 ---
 
 ## Purpose
@@ -370,6 +371,12 @@ Recent errors: [N] (or "None")
 ```
 
 Don't go into fix mode unless asked.
+
+---
+
+### Granola Check
+
+Granola meeting sync uses the desktop app's stored credentials automatically. As part of the health check, verify that Granola's credentials file exists (supabase.json in Granola's app data directory). If missing, note that Granola isn't installed or the user isn't signed in.
 
 ---
 

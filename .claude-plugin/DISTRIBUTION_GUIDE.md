@@ -251,7 +251,7 @@ tail -f ~/.claude/logs/mcp-servers/work.log
 Before publishing, ensure:
 
 - [ ] `plugin.json` has correct GitHub repository URL
-- [ ] LICENSE file is present (MIT - ✅)
+- [ ] LICENSE file is present (PolyForm Noncommercial 1.0.0 - ✅)
 - [ ] CHANGELOG.md is up to date (✅)
 - [ ] README.md explains installation clearly
 - [ ] Python requirements documented

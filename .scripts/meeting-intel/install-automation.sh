@@ -70,6 +70,13 @@ if [ "$1" = "--status" ]; then
     exit 0
 fi
 
+# Re-authenticate with Granola
+if [ "$1" = "--auth" ]; then
+    echo "Re-authenticating with Granola MCP..."
+    "$NODE_PATH" "$SCRIPT_DIR/granola-auth.cjs" --setup
+    exit $?
+fi
+
 # Stop and uninstall
 if [ "$1" = "--stop" ] || [ "$1" = "--uninstall" ]; then
     echo "Stopping and uninstalling..."
@@ -107,12 +114,42 @@ if [ ! -f "$VAULT_PATH/.env" ]; then
 fi
 
 # Check for Granola
-GRANOLA_CACHE="$HOME/Library/Application Support/Granola/cache-v3.json"
-if [ -f "$GRANOLA_CACHE" ]; then
-    echo -e "${GREEN}✓${NC} Granola cache found"
+GRANOLA_CACHE=$(ls -1 "$HOME/Library/Application Support/Granola/cache-v"*.json 2>/dev/null | sort -t'v' -k2 -rn | head -1)
+if [ -n "$GRANOLA_CACHE" ]; then
+    echo -e "${GREEN}✓${NC} Granola cache found: $(basename "$GRANOLA_CACHE")"
 else
     echo -e "${YELLOW}!${NC} Granola cache not found. Install Granola and record a meeting first."
 fi
+
+# Authenticate with Granola MCP
+GRANOLA_TOKENS="$HOME/.config/dex/granola-tokens.json"
+if [ -f "$GRANOLA_TOKENS" ]; then
+    echo -e "${GREEN}✓${NC} Granola MCP authentication found"
+else
+    echo ""
+    echo "Authenticating with Granola..."
+    echo "This will open your browser to sign in to Granola."
+    echo ""
+    read -p "Press Enter to continue (or Ctrl+C to skip)..."
+
+    if [ -n "$NODE_PATH" ]; then
+        "$NODE_PATH" "$SCRIPT_DIR/granola-auth.cjs" --setup
+        if [ $? -eq 0 ] && [ -f "$GRANOLA_TOKENS" ]; then
+            echo -e "${GREEN}✓${NC} Granola MCP authenticated"
+        else
+            echo -e "${YELLOW}!${NC} Granola auth skipped. Background sync will use local cache only."
+            echo "    Run: node .scripts/meeting-intel/granola-auth.cjs --setup"
+        fi
+    fi
+fi
+
+# Write vault-path breadcrumb (used by dex-launcher.sh for resilient path resolution)
+mkdir -p "$HOME/.config/dex"
+echo "$VAULT_PATH" > "$HOME/.config/dex/vault-path"
+echo -e "${GREEN}✓${NC} Vault path registered: $VAULT_PATH"
+
+# Make launcher executable
+chmod +x "$VAULT_PATH/.scripts/dex-launcher.sh"
 
 # Create logs directory
 mkdir -p "$LOG_DIR"
@@ -162,12 +199,17 @@ echo -e "${GREEN}Installation complete!${NC}"
 echo ""
 echo "What happens now:"
 echo "  • Meetings sync automatically every 30 minutes"
+echo "  • Syncs via Granola's official MCP (includes mobile recordings)"
 echo "  • Also syncs when you log in or wake your laptop"
 echo "  • /process-meetings now reads synced files (no terminal output)"
 echo ""
 echo "Commands:"
 echo "  ./install-automation.sh --status    Check if running"
 echo "  ./install-automation.sh --stop      Disable background sync"
+echo "  ./install-automation.sh --auth      Re-authenticate with Granola"
+echo ""
+echo "  node .scripts/meeting-intel/granola-auth.cjs --status   Check Granola auth"
+echo "  node .scripts/meeting-intel/granola-auth.cjs --setup    Re-authenticate"
 echo ""
 echo "Logs:"
 echo "  $LOG_DIR/meeting-intel.stdout.log"

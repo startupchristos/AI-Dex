@@ -172,6 +172,19 @@ skill-name/
 
 Invoked with `/skill-name` - automatically discovered by Claude.
 
+## What's New
+
+### v1.11.0 — Isolated Context & Agent Memory
+
+Skills that run heavy workflows now execute in **isolated context** — your conversation stays clean, no context bleed. Key enhancements:
+
+- **Daily/Weekly workflows** (`/daily-plan`, `/daily-review`, `/week-plan`, `/week-review`) — Isolated context execution. `/daily-plan` generates a quickref summary and is powered by agents with memory that track trends across sessions.
+- **Meetings** (`/meeting-prep`, `/process-meetings`) — Isolated context. `/process-meetings` auto-updates person pages and supports background execution for large batches.
+- **Career** (`/career-coach`) — Isolated context. Auto-captures career evidence when achievements with metrics are discussed.
+- **Triage** (`/triage`) — Tuned for speed. Quick routing decisions without over-analysis.
+
+---
+
 ## Skill Types in Dex
 
 Dex includes two categories of skills:
@@ -184,12 +197,12 @@ Built specifically for personal knowledge management and productivity workflows 
 - `/getting-started` - Interactive post-onboarding tour (adaptive to your setup)
 
 **Daily Workflow:**
-- `/daily-plan` - Context-aware daily planning
-- `/daily-review` - End of day review with learning capture
+- `/daily-plan` - Context-aware daily planning *(v1.11: isolated context, quickref summary, agent memory tracks trends)*
+- `/daily-review` - End of day review with learning capture *(v1.11: isolated context)*
 - `/journal` - Start or manage journaling
 
 **Weekly Workflow:**
-- `/week-plan` - Set weekly priorities
+- `/week-plan` - Set weekly priorities *(v1.11: isolated context)*
 - `/week-review` - Weekly synthesis
 
 **Quarterly Workflow:**
@@ -197,8 +210,8 @@ Built specifically for personal knowledge management and productivity workflows 
 - `/quarter-review` - Review and capture learnings
 
 **Meetings:**
-- `/meeting-prep` - Prepare for meetings
-- `/process-meetings` - Process Granola meetings
+- `/meeting-prep` - Prepare for meetings *(v1.11: isolated context)*
+- `/process-meetings` - Process Granola meetings *(v1.11: isolated context, auto-updates person pages, background execution)*
 
 **Thinking & Decision Support:**
 - `/first-principles-custom` - Decompose to axioms, challenge assumptions, reconstruct from fundamentals
@@ -208,9 +221,9 @@ Built specifically for personal knowledge management and productivity workflows 
 
 **Career Development:**
 - `/career-setup` - Initialize career system
-- `/career-coach` - Career reflections and assessments
+- `/career-coach` - Career reflections and assessments *(v1.11: isolated context, auto-captures career evidence)*
 - `/job-search-custom` - Search for jobs matching criteria across configured sources (LinkedIn, Indeed, Wellfound, etc.)
-- `/job-opportunity` - Evaluate fit, customize applications, and prepare for each interview stage
+- `/job-opportunity-custom` - Evaluate fit, customize applications, and prepare for each interview stage
 - `/resume-builder` - Build resume through guided interview
 - `/linkedin-post-generator-custom` - Create LinkedIn posts in venture operator voice (triggered judgment, mandatory stop line)
 - `/oneday-class-recap-generator-custom` - Generate Oneday class recap emails from transcript URL
@@ -218,7 +231,7 @@ Built specifically for personal knowledge management and productivity workflows 
 **Projects:**
 - `/project-health` - Review project status
 - `/product-brief` - Generate PRD from ideas
-- `/triage` - Organize inbox and extract tasks
+- `/triage` - Organize inbox and extract tasks *(v1.11: tuned for speed)*
 
 **AI Configuration:**
 - `/ai-setup` - Configure budget cloud models (80% cheaper) and offline mode

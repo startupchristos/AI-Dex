@@ -16,24 +16,24 @@ The PTY wrapper (launch.py) remains as a safety net for terminal output,
 but this MCP is the PRIMARY defense — filtering at the source.
 """
 
-import os
-import sys
 import json
 import logging
 import re
-from pathlib import Path
-from typing import Dict, List, Optional, Set
+import sys
 from datetime import datetime
+from pathlib import Path
+from typing import Set
 
-from mcp.server import Server, NotificationOptions
-from mcp.server.models import InitializationOptions
 import mcp.server.stdio
 import mcp.types as types
+from mcp.server import NotificationOptions, Server
+from mcp.server.models import InitializationOptions
 
 # Health system — error queue and health reporting
 try:
     sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-    from core.utils.dex_logger import log_error as _log_health_error, mark_healthy as _mark_healthy
+    from core.utils.dex_logger import log_error as _log_health_error
+    from core.utils.dex_logger import mark_healthy as _mark_healthy
     _HAS_HEALTH = True
 except ImportError:
     _HAS_HEALTH = False
@@ -42,9 +42,12 @@ except ImportError:
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Configuration
-BASE_DIR = Path(os.environ.get('VAULT_PATH', Path.cwd()))
-STATE_FILE = BASE_DIR / 'System' / '.demo-mode-state.json'
+# Configuration (centralized in core.paths)
+_repo_root = str(Path(__file__).parent.parent.parent)
+if _repo_root not in sys.path:
+    sys.path.append(_repo_root)
+from core.paths import STATE_FILE
+from core.paths import VAULT_ROOT as BASE_DIR
 
 # Minimum character length for name parts (avoid false positives)
 MIN_TERM_LENGTH = 3
@@ -95,7 +98,8 @@ def save_state(state: dict):
 def scan_people() -> Set[str]:
     """Extract person names from People/ folder filenames."""
     terms = set()
-    people_dir = BASE_DIR / '05-Areas' / 'People'
+    from core.paths import PEOPLE_DIR as _people_dir
+    people_dir = _people_dir
     if not people_dir.exists():
         return terms
 
@@ -200,6 +204,201 @@ def scan_tasks_for_extra_terms() -> Set[str]:
     return terms
 
 
+# Common English words that appear capitalised in planning/career files.
+# These MUST NOT be treated as person/company names.
+COMMON_WORDS = {
+    'the', 'this', 'that', 'with', 'from', 'for', 'and', 'but', 'not',
+    'you', 'your', 'our', 'they', 'their', 'his', 'her', 'its',
+    'who', 'what', 'when', 'where', 'how', 'why', 'which', 'all',
+    'any', 'each', 'every', 'both', 'few', 'more', 'most', 'some',
+    'such', 'than', 'too', 'very', 'can', 'will', 'just', 'should',
+    'now', 'also', 'into', 'over', 'after', 'before', 'between',
+    'through', 'during', 'about', 'under', 'above', 'other', 'new',
+    'use', 'used', 'using',
+    'team', 'teams', 'build', 'built', 'goal', 'goals', 'plan',
+    'plans', 'week', 'weekly', 'daily', 'quarter', 'quarterly',
+    'annual', 'year', 'month', 'day', 'time', 'next', 'last',
+    'current', 'target', 'level', 'role', 'title', 'area', 'areas',
+    'career', 'growth', 'skill', 'skills', 'track', 'tracking',
+    'progress', 'status', 'update', 'updated', 'review', 'action',
+    'actions', 'key', 'value', 'impact', 'evidence', 'capture',
+    'system', 'systems', 'process', 'workflow', 'function',
+    'summary', 'section', 'milestone', 'milestones', 'project',
+    'projects', 'initiative', 'priority', 'priorities', 'task',
+    'tasks', 'complete', 'completed', 'pending', 'blocked',
+    'success', 'metrics', 'measure', 'outcome', 'outcomes',
+    'strategy', 'strategic', 'technical', 'technology',
+    'product', 'market', 'customer', 'enterprise', 'global',
+    'revenue', 'sales', 'support', 'feedback', 'insight',
+    'intelligence', 'competitive', 'innovation', 'operational',
+    'executive', 'leadership', 'management', 'development',
+    'enablement', 'engagement', 'delivery', 'design', 'thinking',
+    'systematic', 'cross', 'functional', 'authority', 'presence',
+    'excellence', 'influence', 'judgment', 'building', 'engineering',
+    'vision', 'roadmap', 'pipeline', 'expansion', 'rollout',
+    'validation', 'program', 'workshop', 'series', 'session',
+    'sessions', 'conference', 'dinner', 'breakfast', 'event',
+    'internal', 'external', 'transfer', 'radar', 'tree',
+    'pillar', 'pillars', 'theme', 'themes', 'weights', 'wins',
+    'three', 'third', 'first', 'second', 'primary',
+    'must', 'should', 'could', 'would', 'might',
+    'field', 'board', 'meeting', 'meetings', 'prep',
+    'report', 'reporting', 'data', 'analysis', 'approach',
+    'attribution', 'evangelism', 'facilitation', 'group', 'user',
+    'transitioning', 'embed', 'seek', 'deliver', 'land',
+    'ceo', 'cfo', 'cpo', 'cro', 'cmo', 'cto', 'cio', 'ciso',
+    'svp', 'evp', 'vp', 'avp', 'gm', 'md',
+    'aes', 'sdr', 'sdrs', 'bdr', 'bdrs', 'csm', 'csms',
+    'linkedin', 'slack', 'youtube', 'twitter', 'github',
+    'notion', 'figma', 'jira', 'asana', 'airtable',
+    'salesforce', 'hubspot', 'gartner', 'forrester',
+    'google', 'microsoft', 'amazon', 'apple',
+    'overview', 'notes', 'details', 'description', 'context',
+    'challenges', 'overcome', 'alignment', 'position', 'start',
+    'date', 'end', 'did', 'authored', 'designed', 'designing',
+    'own', 'expanded', 'scope', 'moved', 'moving', 'record',
+    'configure', 'configured', 'setup', 'install', 'installed',
+    'balancing', 'positioned', 'branding', 'personal',
+    'architecture', 'automation', 'model', 'operating',
+    'partnership', 'marketing', 'consulting', 'solutions',
+    'playbook', 'asset', 'company', 'job', 'ladder', 'promotion',
+    'align', 'podcast', 'phantom', 'buster', 'clay',
+}
+
+# Compound phrases that appear in planning/career files — skip as a unit.
+PLANNING_SKIP_PHRASES = {
+    'Field CPO', 'Senior PM', 'Staff PM', 'Product Manager',
+    'Principal PM', 'General Manager',
+    'Chief Product Officer', 'Chief Revenue Officer',
+    'Chief Technology Officer', 'Chief Executive Officer',
+    'Deal Support', 'Thought Leadership', 'Product Feedback',
+    'Key Account', 'Key Accounts', 'Career Goal', 'Career Goals',
+    'Quarter Goals', 'Week Priorities', 'Daily Plan', 'Daily Plans',
+    'Growth Goals', 'Career Ladder', 'Current Role', 'Career Coach',
+    'Quarter Objectives', 'Key Meetings', 'Pillar Check',
+    'Revenue Impact', 'Executive Presence', 'Market Intelligence',
+    'Sales Enablement', 'Competitive Intelligence', 'Market Authority',
+    'Team Building', 'Organizational Design', 'Technical Judgment',
+    'Team Development', 'Product Strategy', 'Execution Excellence',
+    'Customer Insight', 'Cross Functional', 'Innovation Engine',
+    'Operational Excellence', 'Strategic Influence',
+    'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday',
+    'Saturday', 'Sunday',
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December',
+    'Must Complete', 'Should Complete', 'If Time', 'Time Permits',
+    'Success Metrics', 'Key Actions', 'Evidence Capture',
+    'Skill Development', 'Key Milestones',
+    'EMEA', 'APAC', 'Americas', 'Europe', 'Global',
+    'Enterprise', 'Internal', 'External',
+    'Agent Analytics', 'Career MCP', 'Vibe PM',
+}
+
+
+def _is_name_like(text: str) -> bool:
+    """Return True if text looks like a person/company name, not a common word."""
+    for part in text.split():
+        if part.lower() in COMMON_WORDS:
+            return False
+    return True
+
+
+def scan_planning_and_career_files() -> Set[str]:
+    """Extract person/company names from planning, career, and evidence files.
+
+    Catches names that only appear in goals, priorities, career docs, or
+    evidence files — even if those people/companies don't have their own
+    People or Key_Accounts page.
+
+    Unlike scan_people(), this does NOT split matches into individual parts
+    to avoid contaminating the term list with common words.
+    """
+    terms: Set[str] = set()
+
+    files_to_scan = [
+        BASE_DIR / '01-Quarter_Goals' / 'Quarter_Goals.md',
+        BASE_DIR / '02-Week_Priorities' / 'Week_Priorities.md',
+        BASE_DIR / '05-Areas' / 'Career' / 'Growth_Goals.md',
+        BASE_DIR / '05-Areas' / 'Career' / 'Current_Role.md',
+        BASE_DIR / '05-Areas' / 'Career' / 'Career_Ladder.md',
+    ]
+
+    evidence_dirs = [
+        BASE_DIR / '05-Areas' / 'Career' / 'Evidence',
+        BASE_DIR / '05-Areas' / 'Career' / 'Evidence',
+    ]
+    for edir in evidence_dirs:
+        if edir.exists():
+            for f in edir.rglob('*.md'):
+                files_to_scan.append(f)
+
+    skip_lower = (
+        {t.lower() for t in PLANNING_SKIP_PHRASES}
+        | {t.lower() for t in DEFAULT_ALLOWLIST}
+    )
+
+    for file_path in files_to_scan:
+        if not file_path.exists():
+            continue
+        try:
+            content = file_path.read_text(encoding='utf-8')
+        except Exception:
+            continue
+
+        # 1. WikiLinks
+        for match in re.finditer(r'\[\[([^\]]+)\]\]', content):
+            link = match.group(1)
+            if re.match(r'^[A-Z]', link) and '/' not in link:
+                name = link.replace('_', ' ').strip()
+                if len(name) >= MIN_TERM_LENGTH and name.lower() not in skip_lower:
+                    if _is_name_like(name):
+                        terms.add(name)
+
+        # 2. "First Last" person-name patterns (single line only)
+        for match in re.finditer(
+            r'\b([A-Z][a-z]{2,})[ ]+([A-Z][a-z]{2,})(?:[ ]+([A-Z][a-z]{2,}))?\b',
+            content
+        ):
+            full = match.group(0).strip()
+            if (full.lower() not in skip_lower
+                    and len(full) >= MIN_TERM_LENGTH
+                    and _is_name_like(full)):
+                terms.add(full)
+
+        # 3. Meeting table rows
+        for match in re.finditer(
+            r'\|\s*\w{2,3}\s*\|\s*[\d:]+[^|]*\|\s*([^|]+)\|', content
+        ):
+            cell = match.group(1).strip()
+            for name_match in re.finditer(
+                r'([A-Z][a-z]{2,}(?:\s+[A-Z][a-z]{2,}){1,2})', cell
+            ):
+                candidate = name_match.group(1).strip()
+                if candidate.lower() not in skip_lower and _is_name_like(candidate):
+                    terms.add(candidate)
+
+        # 4. "— Name" stakeholder patterns
+        for match in re.finditer(
+            r'—\s*([A-Z][a-z]{2,}(?:\s+[A-Z][a-z]{2,}){1,2})', content
+        ):
+            candidate = match.group(1).strip()
+            if candidate.lower() not in skip_lower and _is_name_like(candidate):
+                terms.add(candidate)
+
+        # 5. Company names after "at/from/for/with/to"
+        for match in re.finditer(
+            r'\b(?:at|from|for|with|to)\s+([A-Z][A-Za-z]{2,}(?:\s+[A-Z][A-Za-z]{2,}){0,2})\b',
+            content
+        ):
+            candidate = match.group(1).strip()
+            if (candidate.lower() not in skip_lower
+                    and _is_name_like(candidate)
+                    and len(candidate) >= MIN_TERM_LENGTH):
+                terms.add(candidate)
+
+    return terms
+
+
 # ---------------------------------------------------------------------------
 # Redaction Engine
 # ---------------------------------------------------------------------------
@@ -211,9 +410,10 @@ def get_all_terms(state: dict) -> Set[str]:
     people = scan_people()
     companies = scan_companies()
     tasks = scan_tasks_for_extra_terms()
+    planning = scan_planning_and_career_files()
     manual = {t['term'] for t in state.get('extra_terms', [])}
 
-    all_terms = (people | companies | tasks | manual) - allowlist
+    all_terms = (people | companies | tasks | planning | manual) - allowlist
     return all_terms
 
 
@@ -352,13 +552,13 @@ async def handle_list_tools() -> list[types.Tool]:
         ),
         types.Tool(
             name="list_redaction_terms",
-            description="List all terms that will be redacted, grouped by source (people, companies, manual). Useful for auditing what gets blocked.",
+            description="List all terms that will be redacted, grouped by source (people, companies, planning/career, manual). Useful for auditing what gets blocked.",
             inputSchema={
                 "type": "object",
                 "properties": {
                     "category": {
                         "type": "string",
-                        "enum": ["all", "people", "companies", "manual", "allowlist"],
+                        "enum": ["all", "people", "companies", "planning", "manual", "allowlist"],
                         "description": "Which category to list. Default: all.",
                         "default": "all",
                     },
@@ -447,6 +647,7 @@ async def _handle_call_tool_inner(name: str, arguments: dict) -> list[types.Text
             all_terms = get_all_terms(state)
             people = scan_people()
             companies = scan_companies()
+            planning = scan_planning_and_career_files()
             return [types.TextContent(
                 type="text",
                 text=json.dumps({
@@ -454,9 +655,10 @@ async def _handle_call_tool_inner(name: str, arguments: dict) -> list[types.Text
                     "active": True,
                     "people_terms": len(people),
                     "company_terms": len(companies),
+                    "planning_career_terms": len(planning),
                     "manual_terms": len(state.get('extra_terms', [])),
                     "total_terms": len(all_terms),
-                    "message": f"Demo mode ON. {len(all_terms)} terms will be redacted.",
+                    "message": f"Demo mode ON. {len(all_terms)} terms will be redacted (including planning/career files).",
                 }, indent=2)
             )]
         else:
@@ -548,6 +750,11 @@ async def _handle_call_tool_inner(name: str, arguments: dict) -> list[types.Text
             companies = scan_companies() - allowlist
             result['companies'] = sorted(companies)[:50]
             result['companies_count'] = len(companies)
+
+        if category in ('all', 'planning'):
+            planning = scan_planning_and_career_files() - allowlist
+            result['planning_career'] = sorted(planning)[:50]
+            result['planning_career_count'] = len(planning)
 
         if category in ('all', 'manual'):
             result['manual'] = state.get('extra_terms', [])

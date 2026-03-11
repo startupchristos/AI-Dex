@@ -1,11 +1,11 @@
 ---
 name: job-search-custom
-description: Search for job openings matching your criteria across multiple internet sources. Use when: (1) Starting a job search session, (2) Refreshing the pipeline with new postings, (3) Searching specific sources or roles, or (4) Before running /job-opportunity on a specific role. Loads Job-Search-Resources.md and Job-Search-Criteria.md, runs WebSearch per source, filters results, and outputs ranked list.
+description: Search for job openings matching your criteria across multiple internet sources. Use when: (1) Starting a job search session, (2) Refreshing the pipeline with new postings, (3) Searching specific sources or roles, or (4) Before running /job-opportunity-custom on a specific role. Loads Job-Search-Resources.md and Job-Search-Criteria.md, runs WebSearch per source, filters results, and outputs ranked list.
 ---
 
 # Job Search
 
-Find job openings across configured sources that match your criteria. Integrates with `/job-opportunity` for full analysis of any role.
+Find job openings across configured sources that match your criteria. Integrates with `/job-opportunity-custom` for full analysis of any role.
 
 ## Required Context
 
@@ -73,20 +73,20 @@ Output format:
 ### Medium match
 ...
 
-### Pass to /job-opportunity
+### Pass to /job-opportunity-custom
 Paste any URL above to run full analysis.
 ```
 
 ### Step 6: Save and Handoff
 
 - **Offer to save:** `05-Areas/PPM-Career/Professional-Development/Job-Search/Search-Results/YYYYMMDD - Job-Search-Results.md`
-- **Handoff:** "Run `/job-opportunity` with [URL] to analyze this role."
+- **Handoff:** "Run `/job-opportunity-custom` with [URL] to analyze this role."
 
 ---
 
 ## Integration
 
-- **`/job-opportunity`** — Handles evaluation of a specific role once found; job-search feeds it
+- **`/job-opportunity-custom`** — Handles evaluation of a specific role once found; job-search feeds it
 - **`/career-coach`** — Internal development; job-search is for external opportunities
 
 ---

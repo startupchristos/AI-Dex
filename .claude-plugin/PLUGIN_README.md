@@ -220,4 +220,4 @@ If onboarding gets stuck:
 
 ## License
 
-MIT License - see LICENSE file for details
+PolyForm Noncommercial 1.0.0 - see `LICENSE` and `../COMMERCIAL_LICENSE.md` for details.

@@ -347,6 +347,52 @@ fi
 
 ---
 
+## Skill-Scoped Hooks
+
+Some hooks only fire during a specific skill's execution, not globally. These are defined in a skill's frontmatter and are only active while that skill is running.
+
+**Why this matters:** A hook that updates person pages after writing meeting notes should only fire during `/process-meetings`, not every time a file is written. Skill-scoped hooks prevent unwanted side effects.
+
+**Current skill-scoped hooks:**
+
+### post-meeting-person-update.cjs
+
+- **Trigger:** PostToolUse (Write matcher)
+- **Skill:** `/process-meetings`
+- **What it does:** After a meeting note is written, extracts person mentions (WikiLinks and plain name patterns) and appends meeting references to their person pages.
+- **Fires:** Only during `/process-meetings`
+
+### meeting-summary-generator.cjs
+
+- **Trigger:** Stop
+- **Skill:** `/process-meetings`
+- **What it does:** Placeholder for future meeting summary generation on completion.
+- **Fires:** Only during `/process-meetings`
+
+### career-evidence-capture.cjs
+
+- **Trigger:** PostToolUse (Write matcher)
+- **Skill:** `/career-coach`
+- **What it does:** Detects achievement markers (percentages, metrics, outcomes) in career files and auto-logs to the Career Evidence Log.
+- **Fires:** Only during `/career-coach`
+
+### daily-plan-quick-ref.cjs
+
+- **Trigger:** Stop
+- **Skill:** `/daily-plan`
+- **What it does:** Generates a condensed quickref file (<50 lines) from the daily plan — top focus items, key meetings, time blocks.
+- **Output:** `00-Inbox/Daily_Prep/YYYY-MM-DD-quickref.md`
+
+## Utility Hooks
+
+### maintenance.cjs
+
+- **Trigger:** Manual (`node .claude/hooks/maintenance.cjs`) or ask Dex to "run vault maintenance"
+- **What it does:** Vault health checks — stale inbox files (>30 days), broken WikiLinks, orphaned person pages, agent memory cleanup (>90 days).
+- **Output:** Health report to stdout
+
+---
+
 ## Security Warning
 
 ⚠️ **Hooks run automatically with your current environment credentials.** Always review hook code before adding it. Malicious hooks can exfiltrate data.

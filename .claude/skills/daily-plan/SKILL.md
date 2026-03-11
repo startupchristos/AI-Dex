@@ -1,6 +1,16 @@
 ---
 name: daily-plan
 description: Generate context-aware daily plan with calendar, tasks, and priorities. Includes midweek awareness, meeting intelligence, commitment tracking, and smart scheduling suggestions.
+model_routing:
+  default: balanced
+  steps:
+    data-gathering: fast
+    synthesis: balanced
+context: fork
+hooks:
+  Stop:
+    - type: command
+      command: "node .claude/hooks/daily-plan-quick-ref.cjs"
 ---
 
 ## Purpose
@@ -41,7 +51,9 @@ Run these silently without user-facing output:
 1. **Update check**: `check_for_updates(force=False)` - store notification if available
 2. **Self-learning checks**: Run changelog and learning review scripts if due
 3. **Search index refresh**: Run `qmd update && qmd embed` to refresh vault search index with any overnight changes (meetings processed, files edited, etc.). If `qmd` is not installed, skip silently.
-4. **Innovation synthesis** (silent): Call `synthesize_changelog()` and `synthesize_learnings()` from Improvements MCP. These run in background and populate the backlog — results are surfaced in Step 1.5 below.
+4. **People index refresh**: Call `build_people_index` from Work MCP. This keeps the People Directory current so person lookups throughout the day are fast. Takes <2 seconds.
+5. **Innovation synthesis** (silent): Call `synthesize_changelog()` and `synthesize_learnings()` from Improvements MCP. These run in background and populate the backlog — results are surfaced in Step 1.5 below.
+6. **Granola check** (silent): Granola meeting sync uses the desktop app's stored credentials automatically. No migration check needed.
 
 ---
 
@@ -223,7 +235,85 @@ Check if QMD MCP tools are available by calling `qmd_status`. **If available:**
 
 ---
 
-### 5.7 Standard Context Gathering
+### 5.7 Reminders Completion Sync (Dex Today → Dex)
+
+Check if any tasks were completed on phone since the last plan:
+
+```
+Use: reminders_list_completed(list_name="Dex Today")
+```
+
+For each completed item:
+- Match to a Dex task by title
+- Update task status via Work MCP: `update_task_status(task_title="...", status="d")`
+- Surface what was synced:
+
+> "📱 **Synced from phone:**
+> - ✅ "Follow up with Hero Coders" — marked done in Dex"
+
+**If nothing to sync:** Skip silently.
+
+### 5.8 Email Intelligence (if Gmail connected)
+
+Check `System/integrations/config.yaml` for `google-workspace.enabled: true`.
+
+If enabled and MCP healthy:
+1. Get unread count and priority emails from monitored labels
+2. Flag emails needing reply (> 48h since received, from key contacts in `05-Areas/People/`)
+3. Surface email threads with today's meeting attendees
+
+Include in plan:
+
+> "Email: [X] unread, [Y] need replies. [Z] threads with today's meeting attendees."
+
+If unhealthy: skip silently (graceful degradation -- no error to user).
+
+### 5.9 Teams Intelligence (if Teams connected)
+
+Check `System/integrations/config.yaml` for `teams.enabled: true`.
+
+If enabled and MCP healthy:
+1. Get unread messages from priority channels
+2. Surface DMs needing response
+3. Check for mentions
+
+Include in plan:
+
+> "**Teams:** [X] unread chats, [Y] mentions. [Z] threads with today's meeting attendees."
+
+If BOTH Slack and Teams enabled:
+- Show both digests, clearly labeled: "**Slack:** ..." and "**Teams:** ..."
+- Deduplicate if the same person appears in both (merge context, label the source)
+- Present side by side in the plan output under a combined "Chat Intelligence" heading
+
+If unhealthy: skip silently (graceful degradation -- no error to user).
+
+### 5.10a Mobile Capture Check (Dex Inbox)
+
+```
+Use: reminders_list_items(list_name="Dex Inbox")
+```
+
+If items found, surface:
+
+> 📱 **Captured on phone** (3 items in Dex Inbox):
+>
+> 1. "Follow up with Peter about roadmap" — captured yesterday 4:32pm
+> 2. "Look into Rovo for in-app guides" — captured today 2:15pm
+> 3. "Send Anastasia the productized offering doc" — captured today 11:45am
+>
+> **Triage these now?** I'll help assign pillars and priorities.
+
+**Triage flow:**
+- Present each item
+- Infer pillar (using existing smart pillar inference)
+- Confirm with user
+- Create task via Work MCP `process_inbox_with_dedup`
+- Mark Reminder as complete via `reminders_complete_item`
+
+**If Dex Inbox is empty:** Skip silently (no "0 items captured" noise).
+
+### 5.10b Standard Context Gathering
 
 Also gather:
 - **Calendar**: Today's meetings with times and attendees
@@ -384,6 +474,33 @@ integrations_used: [calendar, tasks, people, work-intelligence]
 
 ---
 
+## Step 7.5: Push Focus Tasks to Reminders (Dex → iPhone)
+
+After generating the plan, push today's P0 and P1 focus tasks to Apple Reminders for native iOS notifications:
+
+1. **Clear yesterday's items:**
+   ```
+   Use: reminders_clear_completed(list_name="Dex Today")
+   ```
+
+2. **Push today's focus items:**
+   For each P0/P1 task in today's focus:
+   ```
+   Use: reminders_create_item(
+       list_name="Dex Today",
+       title="Task title",
+       notes="From Dex daily plan",
+       due_date="YYYY-MM-DD"
+   )
+   ```
+
+3. **Confirm silently:**
+   > "📱 Pushed 3 focus tasks to iPhone Reminders (Dex Today)"
+
+**If Reminders MCP unavailable:** Skip silently.
+
+---
+
 ## Step 8: Track Usage (Silent)
 
 Update `System/usage_log.md` to mark daily planning as used.
@@ -422,6 +539,9 @@ The plan works at multiple levels:
 | Integration | MCP Server | Tools Used |
 |-------------|------------|------------|
 | Calendar | dex-calendar-mcp | `calendar_get_today`, `calendar_get_events_with_attendees` |
+| Reminders | dex-calendar-mcp | `reminders_list_items`, `reminders_complete_item`, `reminders_create_item`, `reminders_ensure_lists`, `reminders_list_completed`, `reminders_find_and_complete`, `reminders_clear_completed` |
 | Granola | dex-granola-mcp | `get_recent_meetings` |
 | Work | dex-work-mcp | `list_tasks`, `get_week_progress`, `get_meeting_context`, `get_commitments_due`, `analyze_calendar_capacity`, `suggest_task_scheduling` |
 | Improvements | dex-improvements-mcp | `synthesize_changelog`, `synthesize_learnings`, `list_ideas` |
+| Google Workspace | google-workspace-mcp | Gmail query, email search (if enabled) |
+| Teams | teams-mcp | `teams_list_chats`, `teams_search_messages`, `teams_health_check` (if enabled) |

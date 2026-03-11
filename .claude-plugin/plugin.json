@@ -1,7 +1,7 @@
 {
-  "name": "dex",
+  "name": "dex-by-dave",
   "version": "1.0.0",
-  "description": "Your AI Chief of Staff. Personal operating system with strategic work management, meeting intelligence, relationship tracking, and daily planning. Built for non-technical professionals who want AI leverage without coding.",
+  "description": "Dex by Dave. Your AI Chief of Staff for strategic work management, meeting intelligence, relationship tracking, and daily planning.",
   "author": {
     "name": "Dave Killeen",
     "email": "dave@davekilleen.com",
@@ -9,7 +9,7 @@
   },
   "homepage": "https://github.com/davekilleen/dex",
   "repository": "https://github.com/davekilleen/dex",
-  "license": "MIT",
+  "license": "PolyForm-Noncommercial-1.0.0",
   "keywords": [
     "productivity",
     "pkm",

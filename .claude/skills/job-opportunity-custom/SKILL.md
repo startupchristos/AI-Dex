@@ -1,5 +1,5 @@
 ---
-name: job-opportunity
+name: job-opportunity-custom
 description: End-to-end job opportunity assistant. Evaluate fit, customize applications, and prepare for each interview stage. Use when: (1) Evaluating a role you've seen, (2) Preparing an application, (3) Advancing through interview rounds, or (4) Wanting a structured Go/No-Go before investing time. Uses career files as knowledge base.
 ---
 
@@ -20,7 +20,7 @@ Your personal job opportunity strategist. Treats every open role as a market sig
 ## Usage
 
 ```
-/job-opportunity [optional: paste job description or URL]
+/job-opportunity-custom [optional: paste job description or URL]
 ```
 
 ---
@@ -123,7 +123,7 @@ Save to: `05-Areas/PPM-Career/Professional-Development/Job-Search/Opportunities/
 Include: Metadata, Why This Role Exists, Company Snapshot, Blueprint Fit, Fit Score table, Top 3 Strengths/Gaps, Job Scorecard table, Strategic Conclusion.
 
 **After Phase 1:**
-- User says "yes" → Load `.claude/skills/job-opportunity/references/phase2-application.md` and proceed
+- User says "yes" → Load `.claude/skills/job-opportunity-custom/references/phase2-application.md` and proceed
 - User asks questions → Answer from Phase 1; re-offer Phase 2 when satisfied
 - User says "no" or "stop" → End; analysis is saved
 
@@ -135,9 +135,9 @@ Load the corresponding reference **only when the user confirms readiness** for t
 
 | Phase | Load | Trigger |
 |-------|------|---------|
-| **Phase 2 — Application Support** | `.claude/skills/job-opportunity/references/phase2-application.md` | User confirms after Phase 1 |
-| **Phase 3 — Early Interview** | `.claude/skills/job-opportunity/references/phase3-early-interview.md` | User confirms after Phase 2; needs interviewer name |
-| **Phase 4 — Late Interview** | `.claude/skills/job-opportunity/references/phase4-late-interview.md` | User confirms after Phase 3 |
+| **Phase 2 — Application Support** | `.claude/skills/job-opportunity-custom/references/phase2-application.md` | User confirms after Phase 1 |
+| **Phase 3 — Early Interview** | `.claude/skills/job-opportunity-custom/references/phase3-early-interview.md` | User confirms after Phase 2; needs interviewer name |
+| **Phase 4 — Late Interview** | `.claude/skills/job-opportunity-custom/references/phase4-late-interview.md` | User confirms after Phase 3 |
 
 ---
 
@@ -172,6 +172,6 @@ Load the corresponding reference **only when the user confirms readiness** for t
 
 ## Integration
 
-- **`/career-coach`** — Internal career development. Use `/job-opportunity` for external opportunities.
+- **`/career-coach`** — Internal career development. Use `/job-opportunity-custom` for external opportunities.
 - **`/meeting-prep`** — Before final-round interviews (complements Phase 3).
 - **Don't use for:** Internal promotion prep, general interview coaching without a role, meeting prep for existing clients.
