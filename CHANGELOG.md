@@ -7,6 +7,32 @@ All notable changes to Dex will be documented in this file.
 
 ---
 
+## [1.10.12] - 2026-03-13
+
+### CI and Nightly Quality Workflows — Personal Vault Compatible
+
+**Before:** GitHub Actions CI and Nightly Quality failed because they expected dex-core structure (scripts/, core/) that does not exist in a personal vault. chmod and all policy steps errored.
+
+**Now:** Both workflows run only what exists: checkout, Node setup, npm ci, and npm run test:hooks (hook harness tests). Removes Python, coverage, security gate, flaky detection, benchmark, and build-release steps that require dex-core artifacts.
+
+---
+
+## [1.10.11] - 2026-03-12
+
+### Ambiguous File Targets Rule (CLAUDE.md)
+
+**Before:** When the user said "update the file" without naming it, the agent sometimes guessed the wrong target (e.g., Life-Vision.md instead of the source file we had just edited).
+
+**Now:** New Core Behavior in CLAUDE.md: treat the file we were just working on as the primary inference. If multiple files could apply, ask "Which file should I update?" before writing. Do not guess from recently viewed or content structure alone. Prevents overwriting the wrong file.
+
+### File Edit Fallbacks (CLAUDE.md)
+
+**Before:** When Write/Edit failed repeatedly, the agent looped the same call instead of trying alternatives.
+
+**Now:** New Core Behavior: chunk large overwrites with StrReplace; confirm success when unsure; escalate after 2-3 failed attempts (manual paste, smaller edits). Prevents looping on failing writes.
+
+---
+
 ## [1.10.10] - 2026-03-11
 
 ### career-coach-custom — Protected from Updates
