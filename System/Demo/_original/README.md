@@ -1,4 +1,4 @@
-# Dex — Your AI Chief of Staff
+# Dex — Your AI Chief of Staff (original)
 
 **A personal operating system powered by Claude.**
 
